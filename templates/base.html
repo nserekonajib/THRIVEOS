@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ThriveOS - High-Performance POS System{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --primary-red: #dc2626;
+            --primary-white: #ffffff;
+            --accent-red: #b91c1c;
+        }
+        
+        /* Full page loader overlay */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .page-loader.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .page-loader .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-red);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Button loader */
+        .button-loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Skeleton loading */
+        .skeleton {
+            background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-red);
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--accent-red);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .btn-primary.loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .form-input:focus {
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+        
+        /* Smooth transitions */
+        * {
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Full Page Loader -->
+    <div id="pageLoader" class="page-loader">
+        <div class="text-center">
+            <div class="loader"></div>
+            <p class="mt-4 text-gray-600 font-medium">Loading ThriveOS...</p>
+        </div>
+    </div>
+
+    <!-- Main Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <!-- Logo and Brand -->
+                    <div class="shrink-0 flex items-center">
+                        <div class="h-10 w-10 bg-gradient-to-br from-red-600 to-red-800 rounded-lg flex items-center justify-center mr-3">
+                            <span class="text-white font-bold text-lg">TO</span>
+                        </div>
+                        <div>
+                            <span class="text-2xl font-bold text-gray-900">ThriveOS</span>
+                            <p class="text-xs text-gray-500">by LUNSERK Technologies</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+                    {% if session.user_id %}
+                        <a href="{{ url_for('dashboard') }}" 
+                           class="text-gray-700 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            Dashboard
+                        </a>
+                        <a href="{{ url_for('auth.logout') }}" 
+                           class="text-gray-700 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            Logout
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" 
+                           class="text-gray-700 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            Login
+                        </a>
+                        <a href="{{ url_for('auth.register') }}" 
+                           class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors">
+                            Get Started
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="main-content" class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-6 p-4 rounded-md border {% if category == 'success' %}bg-green-50 text-green-700 border-green-200{% elif category == 'error' %}bg-red-50 text-red-700 border-red-200{% elif category == 'warning' %}bg-yellow-50 text-yellow-700 border-yellow-200{% else %}bg-blue-50 text-blue-700 border-blue-200{% endif %}">
+                        <div class="flex items-center">
+                            <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% elif category == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} mr-3"></i>
+                            <span>{{ message }}</span>
+                            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Content Area -->
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-12">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p class="text-gray-600">
+                    &copy; {{ now.year }} ThriveOS - LUNSERK Technologies. 
+                    <span class="text-red-600 font-semibold">Free and Open Source for Business.</span>
+                </p>
+                <p class="text-gray-500 text-sm mt-2">
+                    High-performance POS system built with Flask and modern web technologies
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Global loading management
+        const LoaderManager = {
+            isLoading: false,
+            loadingButtons: new Set(),
+            
+            showPageLoader: function() {
+                const loader = document.getElementById('pageLoader');
+                if (loader) {
+                    loader.classList.add('active');
+                }
+                document.body.style.overflow = 'hidden';
+                this.isLoading = true;
+            },
+            
+            hidePageLoader: function() {
+                const loader = document.getElementById('pageLoader');
+                if (loader) {
+                    loader.classList.remove('active');
+                }
+                document.body.style.overflow = '';
+                this.isLoading = false;
+            },
+            
+            showButtonLoader: function(button) {
+                if (!button) return;
+                
+                const originalHTML = button.innerHTML;
+                const originalText = button.textContent.trim();
+                
+                button.innerHTML = `
+                    <div class="button-loader"></div>
+                    <span>${originalText}</span>
+                `;
+                button.disabled = true;
+                button.classList.add('loading');
+                
+                // Store original state
+                button.dataset.originalHTML = originalHTML;
+                button.dataset.originalText = originalText;
+                
+                this.loadingButtons.add(button);
+            },
+            
+            hideButtonLoader: function(button) {
+                if (!button) return;
+                
+                if (button.dataset.originalHTML) {
+                    button.innerHTML = button.dataset.originalHTML;
+                } else if (button.dataset.originalText) {
+                    button.textContent = button.dataset.originalText;
+                }
+                
+                button.disabled = false;
+                button.classList.remove('loading');
+                
+                this.loadingButtons.delete(button);
+            },
+            
+            hideAllButtonLoaders: function() {
+                this.loadingButtons.forEach(button => {
+                    this.hideButtonLoader(button);
+                });
+                this.loadingButtons.clear();
+            },
+            
+            handleFormSubmit: function(form) {
+                const submitButton = form.querySelector('button[type="submit"], input[type="submit"]');
+                if (submitButton) {
+                    this.showButtonLoader(submitButton);
+                    
+                    // Auto-hide after 30 seconds in case of error
+                    setTimeout(() => {
+                        if (this.loadingButtons.has(submitButton)) {
+                            this.hideButtonLoader(submitButton);
+                        }
+                    }, 30000);
+                }
+            }
+        };
+
+        // Initialize on DOM ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide page loader after page loads
+            setTimeout(() => {
+                LoaderManager.hidePageLoader();
+            }, 300);
+            
+            // Auto-hide flash messages after 5 seconds
+            setTimeout(() => {
+                const flashMessages = document.querySelectorAll('.mb-6.p-4.rounded-md');
+                flashMessages.forEach(msg => {
+                    msg.style.transition = 'opacity 0.5s ease';
+                    msg.style.opacity = '0';
+                    setTimeout(() => msg.remove(), 500);
+                });
+            }, 5000);
+            
+            // Setup form submission handlers
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    LoaderManager.handleFormSubmit(this);
+                });
+            });
+            
+            // Setup all buttons with loading class
+            const loadingButtons = document.querySelectorAll('.btn-primary');
+            loadingButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    if (this.type === 'submit') return;
+                    
+                    // Show loader for non-submit buttons that have data-loading attribute
+                    if (this.dataset.loading === 'true') {
+                        LoaderManager.showButtonLoader(this);
+                    }
+                });
+            });
+            
+            // Handle page navigation
+            document.addEventListener('click', function(e) {
+                const link = e.target.closest('a');
+                if (link && link.href && !link.target && !link.href.includes('#')) {
+                    // Show loader for internal navigation
+                    if (link.href.startsWith(window.location.origin)) {
+                        LoaderManager.showPageLoader();
+                    }
+                }
+            });
+        });
+        
+        // Handle browser back/forward
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                LoaderManager.hidePageLoader();
+                LoaderManager.hideAllButtonLoaders();
+            }
+        });
+        
+        // Handle page unload
+        window.addEventListener('beforeunload', function() {
+            LoaderManager.showPageLoader();
+        });
+        
+        // Handle AJAX requests (for future use)
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            LoaderManager.showPageLoader();
+            return originalFetch.apply(this, args)
+                .finally(() => {
+                    LoaderManager.hidePageLoader();
+                });
+        };
+        
+        // Utility functions for manual control
+        window.showLoader = function(button) {
+            if (typeof button === 'string') {
+                button = document.querySelector(button);
+            }
+            LoaderManager.showButtonLoader(button);
+        };
+        
+        window.hideLoader = function(button) {
+            if (typeof button === 'string') {
+                button = document.querySelector(button);
+            }
+            LoaderManager.hideButtonLoader(button);
+        };
+        
+        window.showPageLoader = LoaderManager.showPageLoader;
+        window.hidePageLoader = LoaderManager.hidePageLoader;
+        
+        // Expose for debugging
+        window.LoaderManager = LoaderManager;
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,174 @@
+{% extends "posbase.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <a href="{{ url_for('expenses.expenses_list') }}"
+                   class="mr-4 text-gray-600 hover:text-gray-900">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">{{ title }}</h1>
+                    <p class="mt-1 text-sm text-gray-600">Edit expense details</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Edit Expense Details</h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">Update the expense information</p>
+            </div>
+            
+            <form method="POST" action="{{ url_for('expenses.edit_expense', expense_id=expense.id) }}" class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Date -->
+                    <div>
+                        <label for="expense_date" class="block text-sm font-medium text-gray-700">
+                            Expense Date *
+                        </label>
+                        <input type="date" name="expense_date" id="expense_date" 
+                               value="{{ expense.expense_date_formatted }}"
+                               required
+                               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+
+                    <!-- Vendor -->
+                    <div>
+                        <label for="vendor" class="block text-sm font-medium text-gray-700">
+                            Vendor / Payee
+                        </label>
+                        <input type="text" name="vendor" id="vendor" 
+                               value="{{ expense.vendor }}"
+                               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="Enter vendor name">
+                    </div>
+
+                    <!-- Category -->
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-gray-700">
+                            Category *
+                        </label>
+                        <select name="category" id="category" required
+                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                            <option value="">Select a category</option>
+                            {% for category in categories %}
+                            <option value="{{ category }}" {% if expense.category == category %}selected{% endif %}>
+                                {{ category }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Amount -->
+                    <div>
+                        <label for="amount" class="block text-sm font-medium text-gray-700">
+                            Amount (UGX) *
+                        </label>
+                        <input type="number" name="amount" id="amount" 
+                               value="{{ expense.amount }}"
+                               step="0.01" min="0" required
+                               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="0.00">
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div>
+                        <label for="payment_method" class="block text-sm font-medium text-gray-700">
+                            Payment Method *
+                        </label>
+                        <select name="payment_method" id="payment_method" required
+                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                            <option value="Cash" {% if expense.payment_method == 'Cash' %}selected{% endif %}>Cash</option>
+                            <option value="M-Pesa" {% if expense.payment_method == 'M-Pesa' %}selected{% endif %}>M-Pesa</option>
+                            <option value="Card" {% if expense.payment_method == 'Card' %}selected{% endif %}>Card</option>
+                            <option value="Bank Transfer" {% if expense.payment_method == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+                            <option value="Cheque" {% if expense.payment_method == 'Cheque' %}selected{% endif %}>Cheque</option>
+                            <option value="Other" {% if expense.payment_method == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+
+                    <!-- Status -->
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700">
+                            Status *
+                        </label>
+                        <select name="status" id="status" required
+                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                            <option value="approved" {% if expense.status == 'approved' %}selected{% endif %}>Approved</option>
+                            <option value="pending" {% if expense.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="rejected" {% if expense.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </div>
+
+                    <!-- Description (Full width) -->
+                    <div class="md:col-span-2">
+                        <label for="description" class="block text-sm font-medium text-gray-700">
+                            Description
+                        </label>
+                        <textarea name="description" id="description" rows="3"
+                                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                  placeholder="Enter expense description">{{ expense.description }}</textarea>
+                    </div>
+
+                    <!-- Receipt URL -->
+                    <div class="md:col-span-2">
+                        <label for="receipt_url" class="block text-sm font-medium text-gray-700">
+                            Receipt URL (Optional)
+                        </label>
+                        <input type="url" name="receipt_url" id="receipt_url" 
+                               value="{{ expense.receipt_url }}"
+                               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="https://example.com/receipt.jpg">
+                        <p class="mt-1 text-xs text-gray-500">Link to receipt image or document</p>
+                        {% if expense.receipt_url %}
+                        <div class="mt-2">
+                            <a href="{{ expense.receipt_url }}" target="_blank" 
+                               class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                View Current Receipt
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="md:col-span-2">
+                        <label for="notes" class="block text-sm font-medium text-gray-700">
+                            Notes (Optional)
+                        </label>
+                        <textarea name="notes" id="notes" rows="2"
+                                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                  placeholder="Any additional notes">{{ expense.notes }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="mt-8 pt-6 border-t border-gray-200 flex justify-end space-x-3">
+                    <a href="{{ url_for('expenses.expenses_list') }}"
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Update Expense
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,691 @@
+{% extends "posbase.html" %}
+
+{% block title %}Employees Management - ThriveOS{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Employees Management</h1>
+                <p class="text-gray-600">Add, edit, and manage employee accounts and permissions</p>
+            </div>
+            <button onclick="openAddEmployeeModal()" 
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center">
+                <i class="fas fa-user-plus mr-2"></i> Add Employee
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+            <p class="text-sm text-gray-500">Total Employees</p>
+            <p class="text-2xl font-bold text-gray-900">{{ users|length }}</p>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+            <p class="text-sm text-gray-500">Active</p>
+            <p class="text-2xl font-bold text-green-600">
+                {{ users|selectattr('is_active', 'equalto', true)|list|length }}
+            </p>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+            <p class="text-sm text-gray-500">Admins</p>
+            <p class="text-2xl font-bold text-purple-600">
+                {{ users|selectattr('is_admin', 'equalto', true)|list|length }}
+            </p>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+            <p class="text-sm text-gray-500">Verified</p>
+            <p class="text-2xl font-bold text-blue-600">
+                {{ users|selectattr('email_verified', 'equalto', true)|list|length }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Employees Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">All Employees</h2>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <input type="text" 
+                               placeholder="Search employees..." 
+                               class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                               id="searchEmployees">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                    <select class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent" 
+                            id="roleFilter">
+                        <option value="">All Roles</option>
+                        {% for role in roles %}
+                            <option value="{{ role.name }}">{{ role.name|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="employeesTable">
+                    {% for user in users %}
+                    <tr class="hover:bg-gray-50" data-role="{{ user.user_roles.name if user.user_roles else '' }}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                    <span class="font-semibold text-blue-600">
+                                        {{ user.first_name[0] if user.first_name else '?' }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ user.first_name }} {{ user.last_name }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">{{ user.email }}</div>
+                                    {% if user.position %}
+                                    <div class="text-xs text-gray-400">{{ user.position }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 text-xs font-medium rounded-full {% if user.user_roles and user.user_roles.name == 'admin' %}bg-purple-100 text-purple-800{% elif user.user_roles and user.user_roles.name == 'manager' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ user.user_roles.name|title if user.user_roles else 'No role' }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ user.department or '-' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if user.is_active %}
+                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                Active
+                            </span>
+                            {% else %}
+                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                Inactive
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if user.last_login %}
+                                {{ user.last_login|datetime_format }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="editEmployee('{{ user.id }}')" 
+                                    class="text-blue-600 hover:text-blue-900 mr-3" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="viewEmployee('{{ user.id }}')" 
+                                    class="text-green-600 hover:text-green-900 mr-3" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            {% if user.id != session.user_id %}
+                            <button onclick="toggleEmployeeStatus('{{ user.id }}', {{ user.is_active|lower }})" 
+                                    class="{% if user.is_active %}text-red-600 hover:text-red-900{% else %}text-green-600 hover:text-green-900{% endif %} mr-3" title="{% if user.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                <i class="fas fa-{% if user.is_active %}ban{% else %}check{% endif %}"></i>
+                            </button>
+                            <!-- Optional: Permanent Delete
+                            <button onclick="deleteEmployee('{{ user.id }}', '{{ user.first_name }} {{ user.last_name }}')" 
+                                    class="text-red-600 hover:text-red-900" title="Delete Permanently">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                            -->
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not users %}
+        <div class="text-center py-12">
+            <i class="fas fa-users text-gray-300 text-5xl mb-4"></i>
+            <p class="text-gray-500 mb-2">No employees found</p>
+            <p class="text-gray-400 text-sm">Add your first employee to get started</p>
+            <button onclick="openAddEmployeeModal()" 
+                    class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 inline-flex items-center">
+                <i class="fas fa-user-plus mr-2"></i> Add Employee
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add/Edit Employee Modal -->
+<div id="employeeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+        <div class="p-6">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-gray-900" id="modalTitle">Add New Employee</h3>
+                <button onclick="closeEmployeeModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <!-- Modal Form -->
+<form id="employeeForm" onsubmit="saveEmployee(event)">
+    <div class="space-y-6">
+        <!-- Personal Information -->
+        <div>
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Personal Information</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        First Name *
+                    </label>
+                    <input type="text" 
+                           name="first_name" 
+                           required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Last Name *
+                    </label>
+                    <input type="text" 
+                           name="last_name" 
+                           required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Email Address *
+                    </label>
+                    <input type="email" 
+                           name="email" 
+                           required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                </div>
+            </div>
+        </div>
+
+        <!-- Role & Department -->
+        <div>
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Role & Department</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Role *
+                    </label>
+                    <select name="role_id" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                        <option value="">Select a role</option>
+                        {% for role in roles %}
+                            <option value="{{ role.id }}">{{ role.name|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Reports To
+                    </label>
+                    <select name="reports_to" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                        <option value="">No manager (self-managed)</option>
+                        {% for manager in managers %}
+                            <option value="{{ manager.id }}">
+                                {{ manager.first_name }} {{ manager.last_name }}
+                                {% if manager.position %} - {{ manager.position }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Department
+                    </label>
+                    <input type="text" 
+                           name="department" 
+                           placeholder="e.g., Sales, Engineering"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Position
+                    </label>
+                    <input type="text" 
+                           name="position" 
+                           placeholder="e.g., Sales Manager, Software Engineer"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Hire Date
+                    </label>
+                    <input type="date" 
+                           name="hire_date" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                </div>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div>
+            <div class="flex items-center space-x-4">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" 
+                           name="is_active" 
+                           checked
+                           class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                    <span class="ml-2 text-sm text-gray-700">Active account</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="mt-8 flex justify-end space-x-3">
+        <button type="button" 
+                onclick="closeEmployeeModal()"
+                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+            Cancel
+        </button>
+        <button type="submit" 
+                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center">
+            <i class="fas fa-save mr-2"></i>
+            <span id="saveButtonText">Save Employee</span>
+        </button>
+    </div>
+</form>
+        </div>
+    </div>
+</div>
+
+<!-- View Employee Modal -->
+<div id="viewEmployeeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <!-- Similar structure to employee modal but read-only -->
+</div>
+
+<script>
+let currentEmployeeId = null;
+
+// Modal functions
+function openAddEmployeeModal() {
+    currentEmployeeId = null;
+    document.getElementById('modalTitle').textContent = 'Add New Employee';
+    document.getElementById('saveButtonText').textContent = 'Save Employee';
+    document.getElementById('employeeForm').reset();
+    document.getElementById('employeeModal').classList.remove('hidden');
+}
+
+function closeEmployeeModal() {
+    document.getElementById('employeeModal').classList.add('hidden');
+    currentEmployeeId = null;
+}
+
+// Save employee
+async function saveEmployee(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Convert checkbox value
+    data.is_active = event.target.is_active.checked;
+    
+    // Handle empty optional fields
+    if (!data.reports_to || data.reports_to === '') {
+        delete data.reports_to;
+    }
+    
+    if (!data.hire_date || data.hire_date === '') {
+        delete data.hire_date;
+    }
+    
+    // Clean up empty strings for optional fields
+    const optionalFields = ['department', 'position'];
+    optionalFields.forEach(field => {
+        if (data[field] === '') {
+            delete data[field];
+        }
+    });
+    
+    console.log('Sending employee data:', data); // Debug log
+    
+    const url = currentEmployeeId 
+        ? `/admin/users-roles/employees/${currentEmployeeId}` 
+        : '/admin/users-roles/employees/add';
+    
+    const method = currentEmployeeId ? 'PUT' : 'POST';
+    
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('success', result.message);
+            closeEmployeeModal();
+            // Reload the page after a short delay
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showNotification('error', result.message);
+        }
+    } catch (error) {
+        console.error('Error saving employee:', error);
+        showNotification('error', 'Failed to save employee');
+    }
+}
+
+// Edit employee
+// Edit employee
+async function editEmployee(userId) {
+    try {
+        const response = await fetch(`/admin/users-roles/employees/${userId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            currentEmployeeId = userId;
+            const user = result.data;
+            
+            // Fill form
+            const form = document.getElementById('employeeForm');
+            form.first_name.value = user.first_name || '';
+            form.last_name.value = user.last_name || '';
+            form.email.value = user.email || '';
+            form.role_id.value = user.role_id || '';
+            form.reports_to.value = user.reports_to || '';
+            form.department.value = user.department || '';
+            form.position.value = user.position || '';
+            form.hire_date.value = user.hire_date ? user.hire_date.substring(0, 10) : '';
+            form.is_active.checked = user.is_active || false;
+            
+            // Update UI
+            document.getElementById('modalTitle').textContent = 'Edit Employee';
+            document.getElementById('saveButtonText').textContent = 'Update Employee';
+            document.getElementById('employeeModal').classList.remove('hidden');
+        } else {
+            showNotification('error', result.message);
+        }
+    } catch (error) {
+        console.error('Error fetching employee:', error);
+        showNotification('error', 'Failed to load employee data');
+    }
+}
+
+// View employee details
+async function viewEmployee(userId) {
+    try {
+        const response = await fetch(`/admin/users-roles/employees/${userId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const user = result.data;
+            
+            // Create view modal content
+            const modalContent = `
+                <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+                    <div class="p-6">
+                        <!-- Modal Header -->
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-semibold text-gray-900">Employee Details</h3>
+                            <button onclick="closeViewEmployeeModal()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Employee Information -->
+                        <div class="space-y-6">
+                            <!-- Profile Header -->
+                            <div class="flex items-center space-x-4 mb-6">
+                                <div class="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <span class="font-bold text-blue-600 text-2xl">
+                                        ${user.first_name ? user.first_name[0] : '?'}${user.last_name ? user.last_name[0] : ''}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h4 class="text-2xl font-bold text-gray-900">
+                                        ${user.first_name} ${user.last_name}
+                                    </h4>
+                                    <p class="text-gray-600">${user.position || 'No position specified'}</p>
+                                    <p class="text-sm text-gray-500">${user.email}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Status Badges -->
+                            <div class="flex flex-wrap gap-2 mb-6">
+                                <span class="px-3 py-1 text-sm font-medium rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${user.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                                <span class="px-3 py-1 text-sm font-medium rounded-full ${user.email_verified ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}">
+                                    ${user.email_verified ? 'Email Verified' : 'Email Not Verified'}
+                                </span>
+                                <span class="px-3 py-1 text-sm font-medium rounded-full ${user.user_roles && user.user_roles.name === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}">
+                                    ${user.user_roles ? user.user_roles.name.charAt(0).toUpperCase() + user.user_roles.name.slice(1) : 'No Role'}
+                                </span>
+                            </div>
+                            
+                            <!-- Information Grid -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <div>
+                                        <h5 class="text-sm font-medium text-gray-500 mb-1">Role</h5>
+                                        <p class="text-gray-900">${user.user_roles ? user.user_roles.name.charAt(0).toUpperCase() + user.user_roles.name.slice(1) : 'Not assigned'}</p>
+                                    </div>
+                                    <div>
+                                        <h5 class="text-sm font-medium text-gray-500 mb-1">Department</h5>
+                                        <p class="text-gray-900">${user.department || 'Not specified'}</p>
+                                    </div>
+                                    <div>
+                                        <h5 class="text-sm font-medium text-gray-500 mb-1">Position</h5>
+                                        <p class="text-gray-900">${user.position || 'Not specified'}</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <h5 class="text-sm font-medium text-gray-500 mb-1">Hire Date</h5>
+                                        <p class="text-gray-900">${user.hire_date ? new Date(user.hire_date).toLocaleDateString() : 'Not specified'}</p>
+                                    </div>
+                                    <div>
+                                        <h5 class="text-sm font-medium text-gray-500 mb-1">Last Login</h5>
+                                        <p class="text-gray-900">${user.last_login ? new Date(user.last_login).toLocaleString() : 'Never logged in'}</p>
+                                    </div>
+                                    <div>
+                                        <h5 class="text-sm font-medium text-gray-500 mb-1">Login Count</h5>
+                                        <p class="text-gray-900">${user.login_count || 0}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Account Information -->
+                            <div class="border-t border-gray-200 pt-6 mt-6">
+                                <h5 class="text-lg font-medium text-gray-900 mb-4">Account Information</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-sm text-gray-500">Account Created</p>
+                                        <p class="text-gray-900">${new Date(user.created_at).toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Last Updated</p>
+                                        <p class="text-gray-900">${user.updated_at ? new Date(user.updated_at).toLocaleString() : 'Never'}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Email Verified</p>
+                                        <p class="text-gray-900">${user.email_verified ? 'Yes' : 'No'}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Business</p>
+                                        <p class="text-gray-900">${user.businesses && user.businesses[0] ? user.businesses[0].business_name : 'Not assigned'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Reports To -->
+                            ${user.reports_to ? `
+                            <div class="border-t border-gray-200 pt-6 mt-6">
+                                <h5 class="text-lg font-medium text-gray-900 mb-4">Reports To</h5>
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                                        <i class="fas fa-user text-gray-400"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">Manager</p>
+                                        <p class="text-sm text-gray-500">ID: ${user.reports_to}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Modal Footer -->
+                        <div class="mt-8 flex justify-end space-x-3">
+                            <button onclick="editEmployee('${userId}')" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center">
+                                <i class="fas fa-edit mr-2"></i> Edit Employee
+                            </button>
+                            <button onclick="closeViewEmployeeModal()"
+                                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Create or update modal
+            let modal = document.getElementById('viewEmployeeModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'viewEmployeeModal';
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modal.innerHTML = modalContent;
+                document.body.appendChild(modal);
+            } else {
+                modal.innerHTML = modalContent;
+            }
+            
+            modal.classList.remove('hidden');
+        } else {
+            showNotification('error', result.message);
+        }
+    } catch (error) {
+        console.error('Error viewing employee:', error);
+        showNotification('error', 'Failed to load employee details');
+    }
+}
+
+// Close view employee modal
+function closeViewEmployeeModal() {
+    const modal = document.getElementById('viewEmployeeModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Toggle employee status
+async function toggleEmployeeStatus(userId, isActive) {
+    const action = isActive ? 'deactivate' : 'activate';
+    const confirmMessage = `Are you sure you want to ${action} this employee?`;
+    
+    if (!confirm(confirmMessage)) return;
+    
+    try {
+        const response = await fetch(`/admin/users-roles/employees/${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                is_active: !isActive
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('success', result.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('error', result.message);
+        }
+    } catch (error) {
+        console.error('Error toggling employee status:', error);
+        showNotification('error', 'Failed to update employee status');
+    }
+}
+
+// Search and filter
+document.getElementById('searchEmployees').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#employeesTable tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+document.getElementById('roleFilter').addEventListener('change', function(e) {
+    const selectedRole = e.target.value;
+    const rows = document.querySelectorAll('#employeesTable tr');
+    
+    rows.forEach(row => {
+        const role = row.getAttribute('data-role');
+        if (!selectedRole || role === selectedRole) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Notification function
+function showNotification(type, message) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} z-50`;
+    notification.textContent = message;
+    notification.style.animation = 'slideIn 0.3s ease-out';
+    
+    document.body.appendChild(notification);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

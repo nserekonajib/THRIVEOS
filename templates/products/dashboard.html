@@ -1,0 +1,430 @@
+{% extends "posbase.html" %}
+
+{% block title %}Products Dashboard - {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Dashboard Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Products Dashboard</h1>
+        <p class="text-gray-600 mt-2">Complete overview of your inventory, categories, and suppliers</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Total Products -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition duration-200">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-blue-100 p-3 rounded-lg">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Products</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_products }}</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{{ url_for('products_inventory.products_list') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    View all →
+                </a>
+            </div>
+        </div>
+
+        <!-- Low Stock -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition duration-200">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-yellow-100 p-3 rounded-lg">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.928-.833-2.698 0L4.438 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Low Stock</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ low_stock_count }}</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{{ url_for('products_inventory.low_stock_report') }}" class="text-yellow-600 hover:text-yellow-800 text-sm font-medium">
+                    Check now →
+                </a>
+            </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition duration-200">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-green-100 p-3 rounded-lg">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Categories</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_categories }}</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{{ url_for('products_inventory.categories') }}" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                    Manage →
+                </a>
+            </div>
+        </div>
+
+        <!-- Suppliers -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition duration-200">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-purple-100 p-3 rounded-lg">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Suppliers</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_suppliers }}</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{{ url_for('products_inventory.suppliers_list') }}" class="text-purple-600 hover:text-purple-800 text-sm font-medium">
+                    View all →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <a href="{{ url_for('products_inventory.create_product') }}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Add Product
+            </a>
+            <a href="{{ url_for('products_inventory.categories') }}" 
+               class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                </svg>
+                Manage Categories
+            </a>
+            <a href="{{ url_for('products_inventory.suppliers_list') }}" 
+               class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                Manage Suppliers
+            </a>
+            <a href="{{ url_for('products_inventory.low_stock_report') }}" 
+               class="bg-yellow-600 hover:bg-yellow-700 text-white p-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.928-.833-2.698 0L4.438 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                Low Stock Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column: Recent Products -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-800">Recent Products</h2>
+                    <a href="{{ url_for('products_inventory.products_list') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        View all
+                    </a>
+                </div>
+                
+                {% if recent_products %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Product
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Stock
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Price
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Added
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for product in recent_products %}
+                            <tr class="hover:bg-gray-50 transition duration-150">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        {% if product.image_url %}
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-lg object-cover" src="{{ product.image_url }}" alt="{{ product.name }}">
+                                        </div>
+                                        {% else %}
+                                        <div class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                            <span class="text-gray-500 font-medium">{{ product.name[0]|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900 truncate max-w-xs">
+                                                {{ product.name }}
+                                            </div>
+                                            <div class="text-xs text-gray-500">
+                                                SKU: {{ product.sku or 'N/A' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% set stock_level = product.current_stock or 0 %}
+                                    {% if stock_level > (product.reorder_level or 0) %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                            {{ stock_level }}
+                                        </span>
+                                    {% elif stock_level == 0 %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                            0
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            {{ stock_level }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ugx {{ "%.2f"|format(product.selling_price) }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ product.created_at[:10] }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
+                    </div>
+                    <p class="text-gray-500">No products yet</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Low Stock Items -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mt-8">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-800">Low Stock Items</h2>
+                    <a href="{{ url_for('products_inventory.low_stock_report') }}" class="text-yellow-600 hover:text-yellow-800 text-sm font-medium">
+                        View all
+                    </a>
+                </div>
+                
+                {% if low_stock_items %}
+                <div class="divide-y divide-gray-200">
+                    {% for product in low_stock_items %}
+                    <div class="px-6 py-4 hover:bg-gray-50 transition duration-150">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                {% if product.image_url %}
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <img class="h-10 w-10 rounded-lg object-cover" src="{{ product.image_url }}" alt="{{ product.name }}">
+                                </div>
+                                {% else %}
+                                <div class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <span class="text-gray-500 font-medium">{{ product.name[0]|upper }}</span>
+                                </div>
+                                {% endif %}
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ product.name }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        SKU: {{ product.sku or 'N/A' }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-right">
+                                    <div class="text-sm font-medium text-yellow-600">
+                                        {{ product.current_stock or 0 }} in stock
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        Reorder: {{ product.reorder_level or 0 }}
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('products_inventory.edit_product', product_id=product.id) }}" 
+                                   class="text-yellow-600 hover:text-yellow-800 bg-yellow-50 hover:bg-yellow-100 px-3 py-1.5 rounded-md transition duration-150 text-sm">
+                                    Restock
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-gray-500">All products are well-stocked!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right Column: Categories & Suppliers -->
+        <div class="space-y-8">
+            <!-- Categories -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-800">Categories</h2>
+                    <div class="flex space-x-2">
+                        <a href="{{ url_for('products_inventory.categories') }}" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                            Manage
+                        </a>
+                        <a href="{{ url_for('products_inventory.create_category') }}" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                            Add
+                        </a>
+                    </div>
+                </div>
+                
+                {% if categories %}
+                <div class="divide-y divide-gray-200">
+                    {% for category in categories %}
+                    <div class="px-6 py-4 hover:bg-gray-50 transition duration-150">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ category.name }}
+                                </div>
+                                {% if category.description %}
+                                <div class="text-xs text-gray-500 truncate max-w-xs">
+                                    {{ category.description }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {{ category.product_count or 0 }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-gray-500">No categories yet</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Suppliers -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-800">Suppliers</h2>
+                    <div class="flex space-x-2">
+                        <a href="{{ url_for('products_inventory.suppliers_list') }}" class="text-purple-600 hover:text-purple-800 text-sm font-medium">
+                            Manage
+                        </a>
+                        <a href="{{ url_for('products_inventory.create_supplier') }}" class="text-purple-600 hover:text-purple-800 text-sm font-medium">
+                            Add
+                        </a>
+                    </div>
+                </div>
+                
+                {% if suppliers %}
+                <div class="divide-y divide-gray-200">
+                    {% for supplier in suppliers %}
+                    <div class="px-6 py-4 hover:bg-gray-50 transition duration-150">
+                        <div>
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ supplier.name }}
+                            </div>
+                            {% if supplier.contact %}
+                            <div class="text-xs text-gray-500">
+                                Contact: {{ supplier.contact }}
+                            </div>
+                            {% endif %}
+                            {% if supplier.email or supplier.phone %}
+                            <div class="text-xs text-gray-500">
+                                {{ supplier.email or '' }} {{ supplier.phone or '' }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-gray-500">No suppliers yet</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Inventory Summary -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-800">Inventory Summary</h2>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-600">In Stock Products</span>
+                                <span class="text-sm font-medium text-gray-900">{{ in_stock_count }}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: {{ (in_stock_count / total_products * 100) if total_products > 0 else 0 }}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-600">Low Stock Products</span>
+                                <span class="text-sm font-medium text-yellow-600">{{ low_stock_count }}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-yellow-500 h-2 rounded-full" style="width: {{ (low_stock_count / total_products * 100) if total_products > 0 else 0 }}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-600">Out of Stock</span>
+                                <span class="text-sm font-medium text-red-600">{{ out_of_stock_count }}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-red-500 h-2 rounded-full" style="width: {{ (out_of_stock_count / total_products * 100) if total_products > 0 else 0 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Flash Messages -->
+{% include "components/flash_messages.html" %}
+{% endblock %}

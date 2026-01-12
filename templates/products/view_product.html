@@ -1,0 +1,549 @@
+{% extends "posbase.html" %}
+
+{% block title %}{{ product.name }} - {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{{ url_for('products_inventory.products_list') }}" 
+           class="inline-flex items-center text-blue-600 hover:text-blue-800 transition duration-150">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Products
+        </a>
+    </div>
+
+    <!-- Product Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+        <div class="flex flex-col md:flex-row gap-8">
+            <!-- Product Image -->
+            <div class="md:w-1/3">
+                {% if product.image_url %}
+                <img src="{{ product.image_url }}" 
+                     alt="{{ product.name }}" 
+                     class="w-full h-64 object-cover rounded-lg shadow-sm">
+                {% else %}
+                <div class="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span class="text-4xl font-bold text-gray-400">{{ product.name[0]|upper }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Product Info -->
+            <div class="md:w-2/3">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">{{ product.name }}</h1>
+                        {% if product.sku %}
+                        <div class="mt-2 flex items-center">
+                            <span class="text-sm font-medium text-gray-500">SKU:</span>
+                            <span class="ml-2 font-mono bg-gray-100 px-2 py-1 rounded">{{ product.sku }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex space-x-2">
+                        <a href="{{ url_for('products_inventory.edit_product', product_id=product.id) }}" 
+                           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                            Edit
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Stock Status -->
+                <div class="mb-6">
+                    {% if total_stock > (product.reorder_level or 0) %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        In Stock: {{ total_stock }} {{ product.unit or 'units' }}
+                    </span>
+                    {% elif total_stock == 0 %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Out of Stock
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.928-.833-2.698 0L4.438 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        Low Stock: {{ total_stock }} {{ product.unit or 'units' }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Price Info -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-500">Selling Price</p>
+                        <p class="text-2xl font-bold text-gray-800">UGX {{ "%.2f"|format(product.selling_price) }}</p>
+                    </div>
+                    {% if product.cost_price %}
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-500">Cost Price</p>
+                        <p class="text-xl font-semibold text-gray-800">UGX {{ "%.2f"|format(product.cost_price) }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-500">Profit Margin</p>
+                        <p class="text-xl font-semibold text-green-600">
+                            {% set margin = ((product.selling_price - product.cost_price) / product.cost_price * 100) if product.cost_price > 0 else 0 %}
+                            {{ "%.1f"|format(margin) }}%
+                        </p>
+                    </div>
+                    {% endif %}
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-500">Tax Rate</p>
+                        <p class="text-xl font-semibold text-gray-800">{{ product.tax_rate or 0 }}%</p>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                {% if product.description %}
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Description</h3>
+                    <p class="text-gray-600">{{ product.description }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Categories and Suppliers -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% if product.categories %}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Category</h4>
+                        <p class="text-gray-800">{{ product.categories.name }}</p>
+                    </div>
+                    {% endif %}
+                    {% if product.suppliers %}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Supplier</h4>
+                        <p class="text-gray-800">{{ product.suppliers.name }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="border-b border-gray-200 mb-8">
+        <nav class="-mb-px flex space-x-8">
+            <button onclick="switchTab('lots')" 
+                    id="lots-tab"
+                    class="tab-button py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600">
+                Stock Lots
+            </button>
+            <button onclick="switchTab('movements')" 
+                    id="movements-tab"
+                    class="tab-button py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                Inventory Movements
+            </button>
+            <button onclick="switchTab('adjust')" 
+                    id="adjust-tab"
+                    class="tab-button py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                Adjust Stock
+            </button>
+        </nav>
+    </div>
+
+    <!-- Stock Lots Tab -->
+    <div id="lots-tab-content" class="tab-content">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-800">Stock Lots</h2>
+                <span class="text-sm text-gray-500">Total Stock: {{ total_stock }} {{ product.unit or 'units' }}</span>
+            </div>
+            {% if product_lots %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Lot Number
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Expiry Date
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Quantity
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Cost Price
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Created
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for lot in product_lots %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ lot.lot_number or 'N/A' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ lot.expiry_date or 'No expiry' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ lot.quantity }} {{ product.unit or 'units' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${{ "%.2f"|format(lot.cost_price or 0) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ lot.created_at[:10] }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-gray-50">
+                        <tr>
+                            <td colspan="5" class="px-6 py-3 text-right text-sm font-medium text-gray-900">
+                                Total: {{ total_stock }} {{ product.unit or 'units' }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No stock lots</h3>
+                <p class="mt-1 text-sm text-gray-500">This product doesn't have any stock lots yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Inventory Movements Tab -->
+    <div id="movements-tab-content" class="tab-content hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-800">Inventory Movements</h2>
+            </div>
+            {% if inventory_movements %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date & Time
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Type
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Quantity
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Reference
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for movement in inventory_movements %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ movement.created_at[:19] }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if movement.movement_type == 'IN' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Stock In
+                                </span>
+                                {% elif movement.movement_type == 'OUT' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Stock Out
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    {{ movement.movement_type }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium {% if movement.movement_type == 'IN' %}text-green-600{% elif movement.movement_type == 'OUT' %}text-red-600{% else %}text-gray-900{% endif %}">
+                                {% if movement.movement_type == 'IN' %}+{% elif movement.movement_type == 'OUT' %}−{% endif %}{{ movement.quantity }} {{ product.unit or 'units' }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                {{ movement.reference or 'N/A' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No inventory movements</h3>
+                <p class="mt-1 text-sm text-gray-500">No inventory movements recorded for this product yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Adjust Stock Tab -->
+    <div id="adjust-tab-content" class="tab-content hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-6">Adjust Stock Level</h2>
+            
+            <form method="POST" action="{{ url_for('products_inventory.adjust_inventory') }}" class="space-y-6" id="adjustmentForm">
+                <input type="hidden" name="product_id" value="{{ product.id }}">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Adjustment Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Adjustment Type *
+                        </label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" 
+                                       name="adjustment_type" 
+                                       value="IN" 
+                                       checked
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                                <span class="ml-2 text-sm text-gray-700">Stock In (Add)</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" 
+                                       name="adjustment_type" 
+                                       value="OUT" 
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                                <span class="ml-2 text-sm text-gray-700">Stock Out (Remove)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div>
+                        <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">
+                            Quantity *
+                        </label>
+                        <input type="number" 
+                               id="quantity" 
+                               name="quantity" 
+                               min="1"
+                               required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                               placeholder="Enter quantity">
+                    </div>
+
+                    <!-- Lot Selection -->
+                    <div>
+                        <label for="lot_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            Lot (Optional)
+                        </label>
+                        <select id="lot_id" 
+                                name="lot_id"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white">
+                            <option value="">Create New Lot</option>
+                            {% for lot in product_lots %}
+                            <option value="{{ lot.id }}">
+                                {{ lot.lot_number or 'Lot' }} ({{ lot.quantity }} in stock)
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">
+                            For Stock Out, select a lot to remove from. If none selected, a new lot with 0 quantity will be created.
+                        </p>
+                    </div>
+
+                    <!-- Reason -->
+                    <div>
+                        <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">
+                            Reason / Notes *
+                        </label>
+                        <input type="text" 
+                               id="reason" 
+                               name="reason" 
+                               required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                               placeholder="e.g., Received shipment, Damaged goods, Sales return">
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-blue-800 mb-2">Summary</h3>
+                    <p class="text-sm text-blue-700">
+                        Current Stock: <span class="font-semibold">{{ total_stock }} {{ product.unit or 'units' }}</span>
+                    </p>
+                    <p class="text-sm text-blue-700 mt-1">
+                        After adjustment: <span id="afterAdjustment" class="font-semibold">{{ total_stock }} {{ product.unit or 'units' }}</span>
+                    </p>
+                    {% if product.reorder_level %}
+                    <p class="text-sm text-blue-700 mt-1">
+                        Reorder Level: <span class="font-semibold">{{ product.reorder_level }}</span>
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Important Note for Stock Out -->
+                <div id="stockOutWarning" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 hidden">
+                    <div class="flex">
+                        <svg class="h-5 w-5 text-yellow-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.928-.833-2.698 0L4.438 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        <div>
+                            <h4 class="text-sm font-medium text-yellow-800">Important Note</h4>
+                            <p class="text-sm text-yellow-700 mt-1">
+                                Stock Out without selecting a specific lot will create a new lot with 0 quantity.
+                                To reduce existing stock, please select a lot from the dropdown above.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                    <button type="reset" 
+                            onclick="resetForm()"
+                            class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200">
+                        Clear
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition duration-200">
+                        Apply Adjustment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Tab Switching Script -->
+<script>
+function switchTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active styles from all tabs
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('border-blue-500', 'text-blue-600');
+        button.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabName + '-tab-content').classList.remove('hidden');
+    
+    // Add active styles to selected tab
+    document.getElementById(tabName + '-tab').classList.remove('border-transparent', 'text-gray-500');
+    document.getElementById(tabName + '-tab').classList.add('border-blue-500', 'text-blue-600');
+}
+
+// Initialize first tab as active
+switchTab('lots');
+
+// Real-time adjustment calculation
+document.addEventListener('DOMContentLoaded', function() {
+    const adjustmentTypeRadios = document.querySelectorAll('input[name="adjustment_type"]');
+    const quantityInput = document.getElementById('quantity');
+    const lotSelect = document.getElementById('lot_id');
+    const afterAdjustmentSpan = document.getElementById('afterAdjustment');
+    const stockOutWarning = document.getElementById('stockOutWarning');
+    const currentStock = {{ total_stock }};
+    
+    function calculateAfterAdjustment() {
+        const adjustmentType = document.querySelector('input[name="adjustment_type"]:checked').value;
+        const quantity = parseInt(quantityInput.value) || 0;
+        
+        let newTotal = currentStock;
+        if (adjustmentType === 'IN') {
+            newTotal = currentStock + quantity;
+        } else if (adjustmentType === 'OUT') {
+            newTotal = Math.max(0, currentStock - quantity);
+        }
+        
+        afterAdjustmentSpan.textContent = newTotal + ' {{ product.unit or "units" }}';
+        
+        // Show/hide warning for Stock Out without lot selection
+        if (adjustmentType === 'OUT' && (!lotSelect.value || lotSelect.value === '')) {
+            stockOutWarning.classList.remove('hidden');
+        } else {
+            stockOutWarning.classList.add('hidden');
+        }
+    }
+    
+    // Add event listeners
+    adjustmentTypeRadios.forEach(radio => {
+        radio.addEventListener('change', calculateAfterAdjustment);
+    });
+    
+    quantityInput.addEventListener('input', calculateAfterAdjustment);
+    lotSelect.addEventListener('change', calculateAfterAdjustment);
+    
+    // Initial calculation
+    calculateAfterAdjustment();
+});
+
+// Form reset function
+function resetForm() {
+    document.getElementById('adjustmentForm').reset();
+    const afterAdjustmentSpan = document.getElementById('afterAdjustment');
+    afterAdjustmentSpan.textContent = '{{ total_stock }} {{ product.unit or "units" }}';
+    document.getElementById('stockOutWarning').classList.add('hidden');
+}
+
+// Form validation
+document.getElementById('adjustmentForm').addEventListener('submit', function(e) {
+    const adjustmentType = document.querySelector('input[name="adjustment_type"]:checked').value;
+    const quantity = parseInt(document.getElementById('quantity').value) || 0;
+    const lotSelect = document.getElementById('lot_id');
+    const reason = document.getElementById('reason').value.trim();
+    
+    if (!reason) {
+        e.preventDefault();
+        alert('Please enter a reason for the adjustment.');
+        return;
+    }
+    
+    if (adjustmentType === 'OUT') {
+        if (!lotSelect.value || lotSelect.value === '') {
+            if (!confirm('You are about to create a Stock Out without selecting a specific lot. This will create a new lot with 0 quantity.\n\nAre you sure you want to continue?')) {
+                e.preventDefault();
+                return;
+            }
+        } else {
+            // Check if selected lot has enough stock
+            const selectedOption = lotSelect.options[lotSelect.selectedIndex];
+            const stockText = selectedOption.textContent.match(/\((\d+)/);
+            if (stockText) {
+                const lotStock = parseInt(stockText[1]);
+                if (quantity > lotStock) {
+                    e.preventDefault();
+                    alert(`Selected lot only has ${lotStock} units. You cannot remove ${quantity} units.`);
+                    return;
+                }
+            }
+        }
+        
+        if (quantity > {{ total_stock }}) {
+            e.preventDefault();
+            alert(`Cannot remove ${quantity} units. Current stock is only {{ total_stock }} units.`);
+            return;
+        }
+    }
+});
+</script>
+
+<style>
+.tab-button {
+    transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+    border-color: #d1d5db;
+}
+</style>
+{% endblock %}

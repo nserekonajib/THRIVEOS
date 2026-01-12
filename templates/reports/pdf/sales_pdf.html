@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .business-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .report-title {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .report-period {
+            font-size: 14px;
+            color: #666;
+        }
+        .section {
+            margin: 15px 0;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .summary-item {
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .summary-label {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .summary-value {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .table th {
+            background-color: #f3f4f6;
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        .table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            font-size: 10px;
+        }
+        .status-completed {
+            color: #059669;
+            font-weight: bold;
+        }
+        .status-pending {
+            color: #d97706;
+            font-weight: bold;
+        }
+        .status-failed {
+            color: #dc2626;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .currency {
+            font-family: 'Courier New', monospace;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        {% if business.logo_url %}
+        <img src="{{ business.logo_url }}" alt="Logo" style="height: 50px; margin-bottom: 10px;">
+        {% endif %}
+        <div class="business-name">{{ business.business_name or 'Business Name' }}</div>
+        <div class="report-title">SALES REPORT</div>
+        <div class="report-period">
+            Period: {{ start_date|date_format }} to {{ end_date|date_format }} | 
+            Generated: {{ generated_date.strftime('%d/%m/%Y %H:%M') }}
+        </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="section">
+        <div class="section-title">Sales Summary</div>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-label">Total Sales</div>
+                <div class="summary-value">{{ sales_summary.total_sales }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Total Revenue</div>
+                <div class="summary-value currency">{{ sales_summary.total_revenue|currency }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Average Sale</div>
+                <div class="summary-value currency">{{ sales_summary.average_sale|currency }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Tax Collected</div>
+                <div class="summary-value currency">{{ sales_summary.total_tax|currency }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Status Breakdown -->
+    <div class="section">
+        <div class="section-title">Payment Status Breakdown</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Number of Sales</th>
+                    <th>Total Amount</th>
+                    <th>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for status, data in sales_summary.payment_statuses.items() %}
+                <tr>
+                    <td class="status-{{ status }}">{{ status|title }}</td>
+                    <td class="text-right">{{ data.count }}</td>
+                    <td class="text-right currency">{{ data.amount|currency }}</td>
+                    <td class="text-right">
+                        {% if sales_summary.total_sales > 0 %}
+                        {{ (data.count / sales_summary.total_sales * 100)|round(1) }}%
+                        {% else %}0%{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Recent Sales -->
+    <div class="section">
+        <div class="section-title">Recent Sales (Last 20)</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Subtotal</th>
+                    <th>Tax</th>
+                    <th>Discount</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in sales_summary.sales_list %}
+                <tr>
+                    <td>{{ sale.invoice_number }}</td>
+                    <td>{{ sale.created_at|date_format }}</td>
+                    <td>{{ sale.customer_name or 'Walk-in' }}</td>
+                    <td class="text-right currency">{{ sale.subtotal|currency }}</td>
+                    <td class="text-right currency">{{ sale.tax_amount|currency }}</td>
+                    <td class="text-right currency">{{ sale.discount_amount|currency }}</td>
+                    <td class="text-right currency">{{ sale.total_amount|currency }}</td>
+                    <td class="status-{{ sale.payment_status }}">{{ sale.payment_status|title }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if sales_summary.sales_list %}
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="text-right"><strong>Totals:</strong></td>
+                    <td class="text-right currency"><strong>{{ sales_summary.total_subtotal|currency }}</strong></td>
+                    <td class="text-right currency"><strong>{{ sales_summary.total_tax|currency }}</strong></td>
+                    <td class="text-right currency"><strong>{{ sales_summary.total_discount|currency }}</strong></td>
+                    <td class="text-right currency"><strong>{{ sales_summary.total_revenue|currency }}</strong></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+
+    <!-- Daily Trend -->
+    <div class="section">
+        <div class="section-title">Daily Sales Trend</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Sales Count</th>
+                    <th>Daily Revenue</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for day in sales_summary.daily_trend %}
+                <tr>
+                    <td>{{ day.date|date_format }}</td>
+                    <td class="text-right">{{ day.count if day.count else '-' }}</td>
+                    <td class="text-right currency">{{ day.amount|currency }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div>Generated by ThriveOS POS System</div>
+        <div>Page 1 of 1</div>
+    </div>
+</body>
+</html>

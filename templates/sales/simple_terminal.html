@@ -1,0 +1,688 @@
+{% extends "posbase.html" %}
+
+{% block title %}Sales Terminal - {{ session.business_name or 'POS' }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+    
+    .product-card {
+        transition: all 0.2s ease;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        background: white;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        border-color: #dc2626;
+    }
+    
+    .product-image {
+        height: 120px;
+        background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .cart-item {
+        transition: all 0.2s ease;
+    }
+    
+    .cart-item:hover {
+        background: #f8fafc;
+    }
+    
+    .quantity-control {
+        width: 100px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+    
+    .category-chip {
+        transition: all 0.2s ease;
+    }
+    
+    .category-chip.active {
+        background: #dc2626;
+        color: white;
+        border-color: #dc2626;
+    }
+    
+    .category-chip:hover:not(.active) {
+        background: #f3f4f6;
+        border-color: #d1d5db;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .slide-in {
+        animation: slideIn 0.3s ease-out;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="sticky top-16 z-30 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Sales Terminal</h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-sm text-gray-600">Welcome, {{ session.user_name or 'Cashier' }}</span>
+                    <span class="text-xs px-2 py-0.5 bg-red-100 text-red-800 rounded-full">
+                        {{ session.user_role|default('Cashier') }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <!-- Today's Sales -->
+                <div class="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-100 rounded-xl px-4 py-3">
+                    <div class="text-xs text-emerald-700 font-medium">Today's Sales</div>
+                    <div class="text-lg font-bold text-emerald-900">UGX {{ "%.2f"|format(today_total) }}</div>
+                </div>
+                
+                <!-- Cart Summary -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl px-4 py-3">
+                    <div class="text-xs text-blue-700 font-medium">Current Sale</div>
+                    <div class="text-lg font-bold text-blue-900">UGX {{ "%.2f"|format(totals.total) }}</div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex gap-2">
+                    {% if cart %}
+                    <form method="POST" action="{{ url_for('sales_terminal.terminal') }}">
+                        <input type="hidden" name="action" value="clear_cart">
+                        <button type="submit" 
+                                onclick="return confirm('Clear all items from cart?')"
+                                class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors duration-200 flex items-center gap-2">
+                            <i class="fas fa-trash text-sm"></i>
+                            <span class="hidden sm:inline">Clear All</span>
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('sales_terminal.sales_history') }}" 
+                       class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors duration-200 flex items-center gap-2">
+                        <i class="fas fa-history text-sm"></i>
+                        <span class="hidden sm:inline">History</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+        <!-- Products Section (2/3) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Search & Filters -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <!-- Search -->
+                    <div class="flex-1">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" 
+                                   id="productSearch"
+                                   placeholder="Search products by name, SKU, or barcode..."
+                                   class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200">
+                        </div>
+                    </div>
+                    
+                    <!-- Category Filter -->
+                    <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                        <button type="button" 
+                                class="category-chip px-4 py-2 border border-gray-300 rounded-full text-sm font-medium whitespace-nowrap"
+                                onclick="filterProducts('all')">
+                            All Products
+                        </button>
+                        {% for category in categories %}
+                        <button type="button" 
+                                class="category-chip px-4 py-2 border border-gray-300 rounded-full text-sm font-medium whitespace-nowrap"
+                                onclick="filterProducts('{{ category.id }}')">
+                            {{ category.name }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900">Available Products</h2>
+                    <div class="text-sm text-gray-500">
+                        <span id="productCount">{{ products|length }}</span> products
+                    </div>
+                </div>
+                
+                <div class="product-grid" id="productsContainer">
+                    {% for product in products %}
+                    <div class="product-card" data-category="{{ product.category_id or 'uncategorized' }}">
+                        <!-- Product Image -->
+                        <div class="product-image relative">
+                            {% if product.image_url %}
+                            <img src="{{ product.image_url }}" 
+                                 alt="{{ product.name }}" 
+                                 class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="text-gray-400">
+                                <i class="fas fa-box text-4xl"></i>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Stock Badge -->
+                            <div class="absolute top-2 right-2">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full {% if product.available %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ product.stock }} in stock
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Product Info -->
+                        <div class="p-4">
+                            <div class="mb-2">
+                                <h3 class="font-semibold text-gray-900 truncate">{{ product.name }}</h3>
+                                {% if product.sku %}
+                                <div class="text-xs text-gray-500 font-mono mt-1">{{ product.sku }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="text-lg font-bold text-gray-900">UGX {{ "%.2f"|format(product.selling_price) }}</div>
+                                {% if product.tax_rate > 0 %}
+                                <span class="text-xs text-gray-500">{{ product.tax_rate }}% tax</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if product.available %}
+                            <form method="POST" action="{{ url_for('sales_terminal.terminal') }}" 
+                                  class="add-to-cart-form">
+                                <input type="hidden" name="action" value="add_to_cart">
+                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1">
+                                        <input type="number" 
+                                               name="quantity" 
+                                               value="1" 
+                                               min="1" 
+                                               max="{{ product.stock }}"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                                    </div>
+                                    <button type="submit" 
+                                            class="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 font-medium flex items-center gap-2">
+                                        <i class="fas fa-cart-plus text-sm"></i>
+                                        <span>Add</span>
+                                    </button>
+                                </div>
+                            </form>
+                            {% else %}
+                            <button class="w-full px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed" disabled>
+                                <i class="fas fa-times-circle mr-2"></i>
+                                Out of Stock
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if not products %}
+                    <div class="col-span-full text-center py-12">
+                        <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                            <i class="fas fa-box-open text-2xl text-gray-400"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+                        <p class="text-gray-500">Try adjusting your search or add new products in inventory.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Cart Section (1/3) -->
+        <div class="space-y-6">
+            <!-- Current Sale Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sticky top-36">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900">Current Sale</h2>
+                    {% if cart %}
+                    <span class="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
+                        {{ cart|length }} items
+                    </span>
+                    {% endif %}
+                </div>
+                
+                {% if cart %}
+                <!-- Cart Items -->
+                <div class="space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin pr-2">
+                    {% for product_id, item in cart.items() %}
+                    <div class="cart-item bg-gray-50 rounded-xl p-4 slide-in">
+                        <div class="flex items-start justify-between">
+                            <!-- Item Info -->
+                            <div class="flex-1 mr-4">
+                                <div class="font-medium text-gray-900">{{ item.name }}</div>
+                                {% if item.sku %}
+                                <div class="text-xs text-gray-500 font-mono mt-1">{{ item.sku }}</div>
+                                {% endif %}
+                                <div class="text-sm text-gray-600 mt-1">
+                                    UGX {{ "%.2f"|format(item.price) }} each
+                                </div>
+                            </div>
+                            
+                            <!-- Quantity & Remove -->
+                            <div class="text-right">
+                                <div class="font-bold text-gray-900 text-lg mb-2">
+                                    UGX {{ "%.2f"|format(item.price * item.quantity) }}
+                                </div>
+                                
+                                <div class="flex items-center gap-2">
+                                    <!-- Update Form -->
+                                    <form method="POST" action="{{ url_for('sales_terminal.terminal') }}"
+                                          class="flex items-center gap-2">
+                                        <input type="hidden" name="action" value="update_cart">
+                                        <input type="hidden" name="product_id" value="{{ product_id }}">
+                                        
+                                        <div class="relative">
+                                            <button type="button" 
+                                                    onclick="updateQuantity('{{ product_id }}', -1)"
+                                                    class="absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center text-gray-500 hover:text-red-600">
+                                                <i class="fas fa-minus text-xs"></i>
+                                            </button>
+                                            
+                                            <input type="number" 
+                                                   id="quantity-{{ product_id }}"
+                                                   value="{{ item.quantity }}" 
+                                                   min="1" 
+                                                   max="999"
+                                                   class="w-20 px-8 py-2 border border-gray-300 rounded-lg text-center font-medium">
+                                            
+                                            <button type="button" 
+                                                    onclick="updateQuantity('{{ product_id }}', 1)"
+                                                    class="absolute right-0 top-0 bottom-0 w-8 flex items-center justify-center text-gray-500 hover:text-green-600">
+                                                <i class="fas fa-plus text-xs"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <button type="submit" 
+                                                class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors duration-200 text-sm">
+                                            Update
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- Remove Button -->
+                                    <button onclick="removeFromCart('{{ product_id }}', '{{ item.name }}')"
+                                            class="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Item Details -->
+                        <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+                            <div class="text-sm">
+                                <span class="text-gray-600">Qty: {{ item.quantity }}</span>
+                                {% if item.unit %}
+                                <span class="text-gray-400 mx-2">•</span>
+                                <span class="text-gray-600">{{ item.unit }}</span>
+                                {% endif %}
+                            </div>
+                            {% if item.tax_rate > 0 %}
+                            <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                Tax: {{ item.tax_rate }}%
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Cart Totals -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Subtotal</span>
+                            <span class="font-medium">UGX {{ "%.2f"|format(totals.subtotal) }}</span>
+                        </div>
+                        
+                        {% if totals.tax_total > 0 %}
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Tax</span>
+                            <span class="font-medium">UGX {{ "%.2f"|format(totals.tax_total) }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="flex justify-between items-center text-lg font-bold pt-3 border-t border-gray-200">
+                            <span class="text-gray-900">Total</span>
+                            <span class="text-red-600">UGX {{ "%.2f"|format(totals.total) }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="mt-6 space-y-3">
+                        <form method="POST" action="{{ url_for('sales_terminal.process_payment') }}">
+                            <button type="submit" 
+                                    class="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-bold hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-3">
+                                <i class="fas fa-credit-card"></i>
+                                <span>PROCEED TO PAYMENT</span>
+                            </button>
+                        </form>
+                        
+                        <div class="flex gap-2">
+                            <form method="POST" action="{{ url_for('sales_terminal.terminal') }}" class="flex-1">
+                                <input type="hidden" name="action" value="clear_cart">
+                                <button type="submit" 
+                                        onclick="return confirm('Clear all items from cart?')"
+                                        class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors duration-200">
+                                    Clear Cart
+                                </button>
+                            </form>
+                            
+                            <button onclick="printReceipt()"
+                                    class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors duration-200">
+                                <i class="fas fa-print mr-2"></i>
+                                Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Empty Cart State -->
+                <div class="text-center py-8">
+                    <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
+                        <i class="fas fa-shopping-cart text-3xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
+                    <p class="text-gray-500 mb-6">Add products from the catalog to start a sale</p>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="filterProducts('all')"
+                                class="py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors duration-200">
+                            Browse Products
+                        </button>
+                        <button onclick="document.getElementById('productSearch').focus()"
+                                class="py-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-medium transition-colors duration-200">
+                            Search Products
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Quick Actions
+            <div class="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-5 text-white">
+                <h3 class="font-medium mb-4">Quick Actions</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="openCashDrawer()"
+                            class="py-2.5 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-sm transition-colors duration-200">
+                        <i class="fas fa-cash-register mr-2"></i>
+                        Open Drawer
+                    </button>
+                    <button onclick="applyDiscount()"
+                            class="py-2.5 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-sm transition-colors duration-200">
+                        <i class="fas fa-tag mr-2"></i>
+                        Add Discount
+                    </button>
+                    <button onclick="addCustomer()"
+                            class="py-2.5 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-sm transition-colors duration-200">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Add Customer
+                    </button>
+                    <button onclick="voidTransaction()"
+                            class="py-2.5 bg-red-500/20 hover:bg-red-500/30 rounded-xl backdrop-blur-sm transition-colors duration-200">
+                        <i class="fas fa-ban mr-2"></i>
+                        Void Sale
+                    </button>
+                </div>
+            </div> -->
+        </div>
+    </div>
+</div>
+
+<!-- Success Toast -->
+<div id="successToast" class="fixed top-24 right-6 z-50 hidden">
+    <div class="bg-green-500 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 slide-in">
+        <i class="fas fa-check-circle text-xl"></i>
+        <div>
+            <div class="font-medium" id="toastMessage">Item added to cart</div>
+            <div class="text-sm opacity-90">Cart updated successfully</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global variables
+let currentCategory = 'all';
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to category chips
+    document.querySelectorAll('.category-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+    
+    // Setup search functionality
+    const searchInput = document.getElementById('productSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            filterProducts(currentCategory, this.value.toLowerCase());
+        });
+    }
+    
+    // Setup add to cart forms
+    document.querySelectorAll('.add-to-cart-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const quantity = this.querySelector('input[name="quantity"]').value;
+            if (quantity <= 0) {
+                e.preventDefault();
+                showToast('Please enter a valid quantity', 'error');
+                return false;
+            }
+        });
+    });
+});
+
+// Filter products by category and search
+function filterProducts(category, searchTerm = '') {
+    currentCategory = category;
+    const products = document.querySelectorAll('.product-card');
+    let visibleCount = 0;
+    
+    products.forEach(product => {
+        const productCategory = product.dataset.category || 'uncategorized';
+        const productName = product.querySelector('h3').textContent.toLowerCase();
+        const productSKU = product.querySelector('.font-mono')?.textContent.toLowerCase() || '';
+        
+        const matchesCategory = category === 'all' || productCategory === category;
+        const matchesSearch = !searchTerm || 
+                              productName.includes(searchTerm) || 
+                              productSKU.includes(searchTerm);
+        
+        if (matchesCategory && matchesSearch) {
+            product.style.display = 'block';
+            visibleCount++;
+            setTimeout(() => {
+                product.style.opacity = '1';
+                product.style.transform = 'translateY(0)';
+            }, 10);
+        } else {
+            product.style.opacity = '0';
+            product.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                product.style.display = 'none';
+            }, 200);
+        }
+    });
+    
+    // Update product count
+    document.getElementById('productCount').textContent = visibleCount;
+}
+
+// Update cart quantity
+function updateQuantity(productId, change) {
+    const input = document.getElementById(`quantity-${productId}`);
+    let newValue = parseInt(input.value) + change;
+    
+    if (newValue < 1) newValue = 1;
+    if (newValue > 999) newValue = 999;
+    
+    input.value = newValue;
+}
+
+// Remove item from cart
+function removeFromCart(productId, productName) {
+    if (confirm(`Remove "${productName}" from cart?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{{ url_for('sales_terminal.terminal') }}";
+        
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'update_cart';
+        form.appendChild(actionInput);
+        
+        const productIdInput = document.createElement('input');
+        productIdInput.type = 'hidden';
+        productIdInput.name = 'product_id';
+        productIdInput.value = productId;
+        form.appendChild(productIdInput);
+        
+        const quantityInput = document.createElement('input');
+        quantityInput.type = 'hidden';
+        quantityInput.name = 'quantity';
+        quantityInput.value = '0';
+        form.appendChild(quantityInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Show toast notification
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('successToast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    toast.className = `fixed top-24 right-6 z-50 slide-in`;
+    toast.classList.remove('hidden');
+    
+    if (type === 'error') {
+        toast.classList.add('bg-red-500');
+        toast.classList.remove('bg-green-500');
+    } else {
+        toast.classList.add('bg-green-500');
+        toast.classList.remove('bg-red-500');
+    }
+    
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('opacity-0');
+        toast.classList.add('translate-x-full');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+            toast.classList.remove('opacity-0');
+            toast.classList.remove('translate-x-full');
+        }, 300);
+    }, 3000);
+}
+
+// Quick actions
+function openCashDrawer() {
+    showToast('Cash drawer opened', 'success');
+}
+
+function applyDiscount() {
+    const discount = prompt('Enter discount percentage or amount:');
+    if (discount) {
+        showToast(`Discount of ${discount} applied`, 'success');
+    }
+}
+
+function addCustomer() {
+    showToast('Customer added to sale', 'success');
+}
+
+function voidTransaction() {
+    if (confirm('Are you sure you want to void this transaction?')) {
+        showToast('Transaction voided', 'error');
+    }
+}
+
+function printReceipt() {
+    if (!{{ cart|length }}) {
+        showToast('Cart is empty', 'error');
+        return;
+    }
+    showToast('Receipt sent to printer', 'success');
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Focus search on Ctrl + K
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('productSearch').focus();
+    }
+    
+    // Clear cart on Ctrl + Shift + C
+    if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+        e.preventDefault();
+        if (confirm('Clear entire cart?')) {
+            const form = document.querySelector('form[action*="clear_cart"]');
+            if (form) form.submit();
+        }
+    }
+});
+
+// Auto-focus search on page load
+window.addEventListener('load', function() {
+    const searchInput = document.getElementById('productSearch');
+    if (searchInput && !searchInput.value) {
+        searchInput.focus();
+    }
+});
+</script>
+{% endblock %}

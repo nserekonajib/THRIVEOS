@@ -1,0 +1,275 @@
+{% extends "posbase.html" %}
+
+{% block title %}Edit Product - {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-6xl">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{{ url_for('products_inventory.products_list') }}" 
+           class="inline-flex items-center text-blue-600 hover:text-blue-800 transition duration-150">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Products
+        </a>
+    </div>
+
+    <!-- Form Container -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Edit Product</h1>
+            <p class="text-gray-600 mt-2">Update product details</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-8">
+            <!-- Current Image -->
+            {% if product.image_url %}
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Current Image</label>
+                <div class="flex items-center space-x-4">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}" class="w-32 h-32 object-cover rounded-lg">
+                    <div>
+                        <input type="hidden" name="current_image_url" value="{{ product.image_url }}">
+                        <p class="text-sm text-gray-500">Upload new image to replace</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Basic Information -->
+            <div class="border-b border-gray-200 pb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-6">Basic Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Product Name -->
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                            Product Name *
+                        </label>
+                        <input type="text" 
+                               id="name" 
+                               name="name" 
+                               value="{{ product.name }}"
+                               required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                    </div>
+
+                    <!-- SKU -->
+                    <div>
+                        <label for="sku" class="block text-sm font-medium text-gray-700 mb-2">
+                            SKU
+                        </label>
+                        <input type="text" 
+                               id="sku" 
+                               name="sku" 
+                               value="{{ product.sku or '' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                    </div>
+
+                    <!-- Category -->
+                    <div>
+                        <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            Category
+                        </label>
+                        <select id="category_id" 
+                                name="category_id"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white">
+                            <option value="">Select Category</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if product.category_id == category.id %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Supplier -->
+                    <div>
+                        <label for="supplier_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            Supplier
+                        </label>
+                        <select id="supplier_id" 
+                                name="supplier_id"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white">
+                            <option value="">Select Supplier</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}" {% if product.supplier_id == supplier.id %}selected{% endif %}>
+                                {{ supplier.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="md:col-span-2">
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                            Description
+                        </label>
+                        <textarea id="description" 
+                                  name="description" 
+                                  rows="3"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">{{ product.description or '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="border-b border-gray-200 pb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-6">Pricing</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Cost Price -->
+                    <div>
+                        <label for="cost_price" class="block text-sm font-medium text-gray-700 mb-2">
+                            Cost Price
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-3.5 text-gray-500">    UGX   </span>
+                            <input type="number" 
+                                   id="cost_price" 
+                                   name="cost_price" 
+                                   step="0.01"
+                                   min="0"
+                                   value="{{ product.cost_price or 0 }}"
+                                   class="w-full px-4 py-3 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                        </div>
+                    </div>
+
+                    <!-- Selling Price -->
+                    <div>
+                        <label for="selling_price" class="block text-sm font-medium text-gray-700 mb-2">
+                            Selling Price *
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-3.5 text-gray-500">    UGX   </span>
+                            <input type="number" 
+                                   id="selling_price" 
+                                   name="selling_price" 
+                                   step="0.01"
+                                   min="0"
+                                   value="{{ product.selling_price }}"
+                                   required
+                                   class="w-full px-4 py-3 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                        </div>
+                    </div>
+
+                    <!-- Tax Rate -->
+                    <div>
+                        <label for="tax_rate" class="block text-sm font-medium text-gray-700 mb-2">
+                            Tax Rate (%)
+                        </label>
+                        <div class="relative">
+                            <input type="number" 
+                                   id="tax_rate" 
+                                   name="tax_rate" 
+                                   step="0.01"
+                                   min="0"
+                                   max="100"
+                                   value="{{ product.tax_rate or 0 }}"
+                                   class="w-full px-4 py-3 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                            <span class="absolute right-3 top-3.5 text-gray-500">%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory -->
+            <div class="pb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-6">Inventory</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Unit -->
+                    <div>
+                        <label for="unit" class="block text-sm font-medium text-gray-700 mb-2">
+                            Unit of Measure
+                        </label>
+                        <input type="text" 
+                               id="unit" 
+                               name="unit" 
+                               value="{{ product.unit or '' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                    </div>
+
+                    <!-- Barcode -->
+                    <div>
+                        <label for="barcode" class="block text-sm font-medium text-gray-700 mb-2">
+                            Barcode
+                        </label>
+                        <input type="text" 
+                               id="barcode" 
+                               name="barcode" 
+                               value="{{ product.barcode or '' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                    </div>
+
+                    <!-- Reorder Level -->
+                    <div>
+                        <label for="reorder_level" class="block text-sm font-medium text-gray-700 mb-2">
+                            Reorder Level
+                        </label>
+                        <input type="number" 
+                               id="reorder_level" 
+                               name="reorder_level" 
+                               min="0"
+                               value="{{ product.reorder_level or 0 }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Image -->
+            <div class="border-t border-gray-200 pt-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-6">Update Product Image</h2>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition duration-200">
+                    <div class="mb-4">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <label for="image" class="cursor-pointer">
+                        <span class="mt-2 block text-sm font-medium text-gray-900">Upload new product image</span>
+                        <span class="mt-1 block text-sm text-gray-500">PNG, JPG, GIF up to 10MB</span>
+                        <input type="file" 
+                               id="image" 
+                               name="image" 
+                               accept="image/*"
+                               class="hidden">
+                    </label>
+                </div>
+                <div id="imagePreview" class="hidden mt-4">
+                    <img src="" alt="Preview" class="max-w-xs rounded-lg shadow-sm">
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('products_inventory.products_list') }}" 
+                   class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition duration-200">
+                    Update Product
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Image Preview Script -->
+<script>
+document.getElementById('image').addEventListener('change', function(e) {
+    const preview = document.getElementById('imagePreview');
+    const file = e.target.files[0];
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.querySelector('img').src = e.target.result;
+            preview.classList.remove('hidden');
+        }
+        reader.readAsDataURL(file);
+    } else {
+        preview.classList.add('hidden');
+    }
+});
+</script>
+{% endblock %}

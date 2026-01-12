@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .business-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .report-title {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .report-period {
+            font-size: 14px;
+            color: #666;
+        }
+        .section {
+            margin: 15px 0;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .summary-item {
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .summary-label {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .summary-value {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .table th {
+            background-color: #f3f4f6;
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        .table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            font-size: 10px;
+        }
+        .status-approved {
+            color: #059669;
+            font-weight: bold;
+        }
+        .status-pending {
+            color: #d97706;
+            font-weight: bold;
+        }
+        .status-rejected {
+            color: #dc2626;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .currency {
+            font-family: 'Courier New', monospace;
+        }
+        .category-badge {
+            background-color: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            display: inline-block;
+            margin: 1px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        {% if business.logo_url %}
+        <img src="{{ business.logo_url }}" alt="Logo" style="height: 50px; margin-bottom: 10px;">
+        {% endif %}
+        <div class="business-name">{{ business.business_name or 'Business Name' }}</div>
+        <div class="report-title">EXPENSES REPORT</div>
+        <div class="report-period">
+            Period: {{ start_date|date_format }} to {{ end_date|date_format }} | 
+            Generated: {{ generated_date.strftime('%d/%m/%Y %H:%M') }}
+        </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="section">
+        <div class="section-title">Expenses Summary</div>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-label">Total Expenses</div>
+                <div class="summary-value">{{ expenses_summary.total_expenses }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Total Amount</div>
+                <div class="summary-value currency">{{ expenses_summary.total_amount|currency }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Average Expense</div>
+                <div class="summary-value currency">{{ expenses_summary.average_expense|currency }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Categories</div>
+                <div class="summary-value">{{ expenses_summary.categories|length }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Breakdown -->
+    <div class="section">
+        <div class="section-title">Category Breakdown</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Number of Expenses</th>
+                    <th>Total Amount</th>
+                    <th>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category, data in expenses_summary.categories.items() %}
+                <tr>
+                    <td>{{ category }}</td>
+                    <td class="text-right">{{ data.count }}</td>
+                    <td class="text-right currency">{{ data.amount|currency }}</td>
+                    <td class="text-right">
+                        {% if expenses_summary.total_amount > 0 %}
+                        {{ (data.amount / expenses_summary.total_amount * 100)|round(1) }}%
+                        {% else %}0%{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="section">
+        <div class="section-title">Status Breakdown</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Number of Expenses</th>
+                    <th>Total Amount</th>
+                    <th>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for status, data in expenses_summary.statuses.items() %}
+                <tr>
+                    <td class="status-{{ status }}">{{ status|title }}</td>
+                    <td class="text-right">{{ data.count }}</td>
+                    <td class="text-right currency">{{ data.amount|currency }}</td>
+                    <td class="text-right">
+                        {% if expenses_summary.total_expenses > 0 %}
+                        {{ (data.count / expenses_summary.total_expenses * 100)|round(1) }}%
+                        {% else %}0%{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Recent Expenses -->
+    <div class="section">
+        <div class="section-title">Recent Expenses (Last 20)</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Vendor</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Payment Method</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses_summary.expenses_list %}
+                <tr>
+                    <td>{{ expense.expense_date|date_format }}</td>
+                    <td>{{ expense.vendor or 'N/A' }}</td>
+                    <td><span class="category-badge">{{ expense.category }}</span></td>
+                    <td>{{ expense.description|truncate(30) or '-' }}</td>
+                    <td class="text-right currency">{{ expense.amount|currency }}</td>
+                    <td>{{ expense.payment_method }}</td>
+                    <td class="status-{{ expense.status }}">{{ expense.status|title }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if expenses_summary.expenses_list %}
+            <tfoot>
+                <tr>
+                    <td colspan="4" class="text-right"><strong>Total:</strong></td>
+                    <td class="text-right currency"><strong>{{ expenses_summary.total_amount|currency }}</strong></td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div>Generated by ThriveOS POS System</div>
+        <div>Page 1 of 1</div>
+    </div>
+</body>
+</html>

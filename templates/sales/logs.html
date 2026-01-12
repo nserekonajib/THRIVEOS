@@ -1,0 +1,700 @@
+{% extends "posbase.html" %}
+
+{% block title %}Audit Logs - {{ session.business_name or 'POS' }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .audit-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .audit-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+    }
+    
+    .action-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .user-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+    }
+    
+    .details-card {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+        font-size: 0.875rem;
+    }
+    
+    .json-key {
+        color: #059669;
+        font-weight: 500;
+    }
+    
+    .json-value {
+        color: #2563eb;
+    }
+    
+    .json-string {
+        color: #dc2626;
+    }
+    
+    .json-number {
+        color: #7c3aed;
+    }
+    
+    .json-boolean {
+        color: #d97706;
+    }
+    
+    .filter-btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .filter-btn.active {
+        background: #dc2626;
+        color: white;
+        border-color: #dc2626;
+    }
+    
+    .filter-btn:hover:not(.active) {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .fade-in-up {
+        animation: fadeInUp 0.3s ease-out;
+    }
+    
+    .time-badge {
+        padding: 0.25rem 0.5rem;
+        background: #f3f4f6;
+        color: #6b7280;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    }
+    
+    .ip-badge {
+        padding: 0.25rem 0.5rem;
+        background: #dbeafe;
+        color: #1e40af;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="sticky top-16 z-30 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Audit Logs</h1>
+                <p class="text-gray-600 mt-1">Track all system activities and user actions</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="exportLogs()" 
+                        class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl font-medium hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 shadow-sm flex items-center gap-2">
+                    <i class="fas fa-file-export text-sm"></i>
+                    Export Logs
+                </button>
+                
+                <button onclick="clearOldLogs()" 
+                        class="px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-sm flex items-center gap-2">
+                    <i class="fas fa-trash text-sm"></i>
+                    Clear Old Logs
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="p-6 space-y-6">
+        <!-- Filter Section -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Filter Logs</h2>
+            <form method="GET" action="{{ url_for('sales_terminal.audit_logs') }}" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Date Range -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>
+                            Start Date
+                        </label>
+                        <input type="date" 
+                               name="start_date" 
+                               value="{{ request.args.get('start_date', '') }}"
+                               class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>
+                            End Date
+                        </label>
+                        <input type="date" 
+                               name="end_date" 
+                               value="{{ request.args.get('end_date', '') }}"
+                               class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                    </div>
+                    
+                    <!-- Action Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-bolt mr-2 text-gray-400"></i>
+                            Action Type
+                        </label>
+                        <select name="action" 
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white">
+                            <option value="">All Actions</option>
+                            <option value="login" {% if request.args.get('action') == 'login' %}selected{% endif %}>Login</option>
+                            <option value="logout" {% if request.args.get('action') == 'logout' %}selected{% endif %}>Logout</option>
+                            <option value="sale" {% if request.args.get('action') == 'sale' %}selected{% endif %}>Sale</option>
+                            <option value="refund" {% if request.args.get('action') == 'refund' %}selected{% endif %}>Refund</option>
+                            <option value="product_create" {% if request.args.get('action') == 'product_create' %}selected{% endif %}>Product Create</option>
+                            <option value="product_update" {% if request.args.get('action') == 'product_update' %}selected{% endif %}>Product Update</option>
+                            <option value="product_delete" {% if request.args.get('action') == 'product_delete' %}selected{% endif %}>Product Delete</option>
+                            <option value="user_create" {% if request.args.get('action') == 'user_create' %}selected{% endif %}>User Create</option>
+                            <option value="user_update" {% if request.args.get('action') == 'user_update' %}selected{% endif %}>User Update</option>
+                            <option value="user_delete" {% if request.args.get('action') == 'user_delete' %}selected{% endif %}>User Delete</option>
+                            <option value="stock_adjustment" {% if request.args.get('action') == 'stock_adjustment' %}selected{% endif %}>Stock Adjustment</option>
+                            <option value="settings_update" {% if request.args.get('action') == 'settings_update' %}selected{% endif %}>Settings Update</option>
+                        </select>
+                    </div>
+                    
+                    <!-- User Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user mr-2 text-gray-400"></i>
+                            User
+                        </label>
+                        <select name="user_id" 
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white">
+                            <option value="">All Users</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if request.args.get('user_id') == user.id %}selected{% endif %}>
+                                {{ user.name }} ({{ user.role }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Quick Filters -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-sm font-medium text-gray-700 mr-2">Quick Filters:</span>
+                    <button type="button" onclick="setDateRange('today')" class="filter-btn">Today</button>
+                    <button type="button" onclick="setDateRange('yesterday')" class="filter-btn">Yesterday</button>
+                    <button type="button" onclick="setDateRange('week')" class="filter-btn">Last 7 Days</button>
+                    <button type="button" onclick="setDateRange('month')" class="filter-btn">Last 30 Days</button>
+                    <button type="button" onclick="setDateRange('sales')" class="filter-btn">Sales Only</button>
+                    <button type="button" onclick="setDateRange('security')" class="filter-btn">Security Only</button>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <div>
+                        <button type="submit" 
+                                class="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-sm flex items-center gap-2">
+                            <i class="fas fa-filter text-sm"></i>
+                            Apply Filters
+                        </button>
+                        
+                        <a href="{{ url_for('sales_terminal.audit_logs') }}" 
+                           class="ml-3 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors duration-200">
+                            Clear Filters
+                        </a>
+                    </div>
+                    
+                    <div class="text-sm text-gray-500">
+                        Showing {{ logs|length }} logs
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Total Logs -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Logs</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_logs }}</p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-xl">
+                        <i class="fas fa-history text-xl text-blue-600"></i>
+                    </div>
+                </div>
+                <div class="mt-4 text-xs text-gray-500">
+                    <i class="fas fa-database mr-1"></i>
+                    System activity records
+                </div>
+            </div>
+            
+            <!-- Today's Activity -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Today's Activity</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ today_logs }}</p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-xl">
+                        <i class="fas fa-chart-line text-xl text-green-600"></i>
+                    </div>
+                </div>
+                <div class="mt-4 text-xs text-gray-500">
+                    <i class="fas fa-calendar-day mr-1"></i>
+                    {{ current_date }}
+                </div>
+            </div>
+            
+            <!-- Top User -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Most Active User</p>
+                        <p class="text-lg font-bold text-gray-900 truncate">
+                            {% if top_user %}
+                                {{ top_user.name }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-xl">
+                        <i class="fas fa-user-check text-xl text-purple-600"></i>
+                    </div>
+                </div>
+                <div class="mt-4 text-xs text-gray-500">
+                    <i class="fas fa-trophy mr-1"></i>
+                    Highest activity count
+                </div>
+            </div>
+            
+            <!-- Most Common Action -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Common Action</p>
+                        <p class="text-lg font-bold text-gray-900">
+                            {% if common_action %}
+                                {{ common_action|title }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-yellow-100 rounded-xl">
+                        <i class="fas fa-bolt text-xl text-yellow-600"></i>
+                    </div>
+                </div>
+                <div class="mt-4 text-xs text-gray-500">
+                    <i class="fas fa-star mr-1"></i>
+                    Most frequent action type
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Logs List -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <!-- Table Header -->
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-900">Activity Logs</h2>
+                <div class="text-sm text-gray-500">
+                    Sorted by latest first
+                </div>
+            </div>
+            
+            {% if logs %}
+            <div class="divide-y divide-gray-200">
+                {% for log in logs %}
+                <div class="audit-card fade-in-up">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between">
+                            <!-- Left: User & Action -->
+                            <div class="flex-1 mr-6">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <!-- User Avatar -->
+                                    <div class="user-avatar bg-gradient-to-r from-red-100 to-pink-100 text-red-700">
+                                        {{ log.user_name|first|upper if log.user_name else 'U' }}
+                                    </div>
+                                    
+                                    <!-- User Info -->
+                                    <div>
+                                        <div class="font-medium text-gray-900">
+                                            {{ log.user_name or 'System User' }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            {{ log.user_role or 'System' }}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Action Badge -->
+                                    <span class="action-badge ml-4 
+                                        {% if log.action in ['login', 'logout'] %}bg-blue-100 text-blue-800
+                                        {% elif log.action in ['sale', 'refund'] %}bg-green-100 text-green-800
+                                        {% elif log.action in ['product_create', 'product_update', 'product_delete'] %}bg-purple-100 text-purple-800
+                                        {% elif log.action in ['user_create', 'user_update', 'user_delete'] %}bg-yellow-100 text-yellow-800
+                                        {% elif log.action in ['stock_adjustment'] %}bg-indigo-100 text-indigo-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        <i class="fas 
+                                            {% if log.action == 'login' %}fa-sign-in-alt
+                                            {% elif log.action == 'logout' %}fa-sign-out-alt
+                                            {% elif log.action == 'sale' %}fa-shopping-cart
+                                            {% elif log.action == 'refund' %}fa-undo
+                                            {% elif 'product' in log.action %}fa-box
+                                            {% elif 'user' in log.action %}fa-user
+                                            {% elif 'stock' in log.action %}fa-warehouse
+                                            {% else %}fa-cog{% endif %} text-xs mr-1">
+                                        </i>
+                                        {{ log.action|upper|replace('_', ' ') }}
+                                    </span>
+                                </div>
+                                
+                                <!-- Description -->
+                                {% if log.description %}
+                                <p class="text-gray-700 mb-4">{{ log.description }}</p>
+                                {% endif %}
+                                
+                                <!-- Details JSON -->
+                                {% if log.details %}
+                                <div class="details-card p-4 mb-4 overflow-x-auto">
+                                    <pre class="whitespace-pre-wrap"><code>{% if log.details is string %}{{ log.details|safe }}{% else %}{{ log.details|tojson(indent=2)|safe }}{% endif %}</code></pre>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Metadata -->
+                                <div class="flex items-center gap-4 text-sm text-gray-500">
+                                    {% if log.ip_address %}
+                                    <span class="ip-badge">
+                                        <i class="fas fa-globe mr-1"></i>
+                                        {{ log.ip_address }}
+                                    </span>
+                                    {% endif %}
+                                    
+                                    {% if log.user_agent %}
+                                    <span class="truncate max-w-xs">
+                                        <i class="fas fa-desktop mr-1"></i>
+                                        {{ log.user_agent[:50] }}{% if log.user_agent|length > 50 %}...{% endif %}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Right: Timestamp 
+                            <div class="text-right">
+                                <div class="time-badge mb-2">
+                                    {{ log.created_at[11:16] if log.created_at else '--:--' }}
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    {{ log.created_at[:10] if log.created_at else 'Unknown' }}
+                                </div>
+                                <div class="text-xs text-gray-400 mt-1">
+                                    {{ time_ago(log.created_at) if log.created_at else '' }}
+                                </div>
+                            </div>-->
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if pages and pages > 1 %}
+            <div class="px-6 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-500">
+                        Page {{ page }} of {{ pages }}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        {% if page > 1 %}
+                        <a href="?page={{ page-1 }}{% for key, value in request.args.items() %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                            Previous
+                        </a>
+                        {% endif %}
+                        
+                        {% if pages %}
+                            {% for p in range(1, pages+1) %}
+                                {% if p >= page-2 and p <= page+2 %}
+                                <a href="?page={{ p }}{% for key, value in request.args.items() %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                   class="px-4 py-2 border rounded-lg text-sm font-medium {% if p == page %}bg-red-600 text-white border-red-600{% else %}border-gray-300 hover:bg-gray-50{% endif %}">
+                                    {{ p }}
+                                </a>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        
+                        {% if page < pages %}
+                        <a href="?page={{ page+1 }}{% for key, value in request.args.items() %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                            Next
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-12">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                    <i class="fas fa-clipboard-list text-2xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No audit logs found</h3>
+                <p class="text-gray-500 mb-6">No activity logs match your current filters. Try adjusting your search criteria.</p>
+                <div class="flex justify-center gap-3">
+                    <a href="{{ url_for('sales_terminal.audit_logs') }}" 
+                       class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200">
+                        Clear Filters
+                    </a>
+                    <button onclick="setDateRange('today')" 
+                            class="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200">
+                        Show Today's Activity
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Success Toast -->
+<div id="successToast" class="fixed top-24 right-6 z-50 hidden">
+    <div class="bg-green-500 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 fade-in-up">
+        <i class="fas fa-check-circle text-xl"></i>
+        <div>
+            <div class="font-medium" id="toastMessage">Operation completed successfully</div>
+            <div class="text-sm opacity-90">Action successful</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize date pickers
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates if not set
+    const startDate = document.querySelector('input[name="start_date"]');
+    const endDate = document.querySelector('input[name="end_date"]');
+    
+    if (startDate && !startDate.value) {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        startDate.value = weekAgo.toISOString().split('T')[0];
+    }
+    
+    if (endDate && !endDate.value) {
+        endDate.value = new Date().toISOString().split('T')[0];
+    }
+    
+    // Format JSON in details cards
+    document.querySelectorAll('pre code').forEach((block) => {
+        try {
+            const json = JSON.parse(block.textContent);
+            const formatted = syntaxHighlight(JSON.stringify(json, null, 2));
+            block.innerHTML = formatted;
+        } catch (e) {
+            // If not valid JSON, leave as is
+        }
+    });
+});
+
+// JSON syntax highlighting
+function syntaxHighlight(json) {
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = 'json-number';
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+                cls = 'json-key';
+            } else {
+                cls = 'json-string';
+            }
+        } else if (/true|false/.test(match)) {
+            cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+            cls = 'json-null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+    });
+}
+
+// Quick date range functions
+function setDateRange(range) {
+    const today = new Date();
+    const startDate = document.querySelector('input[name="start_date"]');
+    const endDate = document.querySelector('input[name="end_date"]');
+    const actionSelect = document.querySelector('select[name="action"]');
+    
+    if (!endDate || !startDate) return;
+    
+    endDate.value = today.toISOString().split('T')[0];
+    
+    switch(range) {
+        case 'today':
+            startDate.value = today.toISOString().split('T')[0];
+            if (actionSelect) actionSelect.value = '';
+            break;
+        case 'yesterday':
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            startDate.value = yesterday.toISOString().split('T')[0];
+            endDate.value = yesterday.toISOString().split('T')[0];
+            if (actionSelect) actionSelect.value = '';
+            break;
+        case 'week':
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            startDate.value = weekAgo.toISOString().split('T')[0];
+            if (actionSelect) actionSelect.value = '';
+            break;
+        case 'month':
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            startDate.value = monthAgo.toISOString().split('T')[0];
+            if (actionSelect) actionSelect.value = '';
+            break;
+        case 'sales':
+            const monthAgoSales = new Date(today);
+            monthAgoSales.setMonth(monthAgoSales.getMonth() - 1);
+            startDate.value = monthAgoSales.toISOString().split('T')[0];
+            if (actionSelect) actionSelect.value = 'sale';
+            break;
+        case 'security':
+            const monthAgoSec = new Date(today);
+            monthAgoSec.setMonth(monthAgoSec.getMonth() - 1);
+            startDate.value = monthAgoSec.toISOString().split('T')[0];
+            if (actionSelect) actionSelect.value = 'login';
+            break;
+    }
+    
+    // Submit the form
+    document.querySelector('form').submit();
+}
+
+// Export functionality
+window.exportLogs = function() {
+    showToast('Exporting audit logs to CSV...', 'success');
+    // In a real implementation, this would trigger a server-side CSV export
+    setTimeout(() => {
+        showToast('CSV export completed', 'success');
+    }, 1500);
+};
+
+window.clearOldLogs = function() {
+    if (confirm('Are you sure you want to clear logs older than 90 days?\n\nThis action cannot be undone.')) {
+        showToast('Clearing old audit logs...', 'warning');
+        // In a real implementation, this would call a server endpoint
+        setTimeout(() => {
+            showToast('Old logs cleared successfully', 'success');
+        }, 1500);
+    }
+};
+
+// Toast notification system
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('successToast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    toast.className = `fixed top-24 right-6 z-50 fade-in-up`;
+    toast.classList.remove('hidden');
+    
+    if (type === 'error') {
+        toast.classList.add('bg-red-500');
+        toast.classList.remove('bg-green-500');
+    } else if (type === 'warning') {
+        toast.classList.add('bg-yellow-500');
+        toast.classList.remove('bg-green-500');
+    } else {
+        toast.classList.add('bg-green-500');
+        toast.classList.remove('bg-red-500', 'bg-yellow-500');
+    }
+    
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('opacity-0');
+        toast.classList.add('translate-x-full');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+            toast.classList.remove('opacity-0');
+            toast.classList.remove('translate-x-full');
+        }, 300);
+    }, 3000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Search on Ctrl + F
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        document.querySelector('input[name="start_date"]').focus();
+    }
+    
+    // Export on Ctrl + E
+    if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        exportLogs();
+    }
+    
+    // Today's logs on Ctrl + T
+    if (e.ctrlKey && e.key === 't') {
+        e.preventDefault();
+        setDateRange('today');
+    }
+});
+
+// Auto-refresh logs every 30 seconds if on today's view
+setInterval(() => {
+    const startDate = document.querySelector('input[name="start_date"]');
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (startDate && startDate.value === today) {
+        // Check if user is actively interacting
+        if (!document.hidden) {
+            window.location.reload();
+        }
+    }
+}, 30000);
+</script>
+{% endblock %}

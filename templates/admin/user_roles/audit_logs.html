@@ -1,0 +1,380 @@
+{% extends "posbase.html" %}
+
+{% block title %}Audit Logs - ThriveOS{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Audit Logs</h1>
+                <p class="text-gray-600">Track all user and role management activities</p>
+            </div>
+            <button onclick="exportLogs()" 
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center">
+                <i class="fas fa-download mr-2"></i> Export Logs
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+        <div class="p-6">
+            <form id="filterForm" onsubmit="filterLogs(event)" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Action Type</label>
+                        <select name="action" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="">All Actions</option>
+                            {% for action in actions %}
+                                <option value="{{ action }}" {% if action == current_action %}selected{% endif %}>
+                                    {{ action|replace('_', ' ')|title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input type="date" 
+                               name="start_date" 
+                               value="{{ start_date }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        <input type="date" 
+                               name="end_date" 
+                               value="{{ end_date }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" 
+                                class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center justify-center">
+                            <i class="fas fa-filter mr-2"></i> Apply Filters
+                        </button>
+                    </div>
+                </div>
+                {% if current_action or start_date or end_date %}
+                <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <span class="text-sm text-gray-600">
+                        Filtered results
+                    </span>
+                    <a href="{{ url_for('user_roles.audit_logs') }}" 
+                       class="text-sm text-red-600 hover:text-red-700 flex items-center">
+                        <i class="fas fa-times mr-1"></i> Clear Filters
+                    </a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">Recent Activity</h2>
+                <span class="text-sm text-gray-500">{{ logs|length }} records</span>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for log in logs %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ log.created_at|datetime_format }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if log.users %}
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ log.users.first_name }} {{ log.users.last_name }}
+                            </div>
+                            <div class="text-sm text-gray-500">{{ log.users.email }}</div>
+                            {% else %}
+                            <span class="text-sm text-gray-500">System</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 text-xs font-medium rounded-full 
+                                {% if 'create' in log.action %}bg-green-100 text-green-800
+                                {% elif 'update' in log.action %}bg-blue-100 text-blue-800
+                                {% elif 'delete' in log.action %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ log.action|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if log.target_type %}
+                            <div>{{ log.target_type|title }}</div>
+                            <div class="text-xs text-gray-400">{{ log.target_id[:8] }}...</div>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ log.ip_address }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <button onclick="showLogDetails('{{ log.id }}')" 
+                                    class="text-blue-600 hover:text-blue-900 text-sm flex items-center">
+                                <i class="fas fa-eye mr-1"></i> View Details
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <i class="fas fa-history text-gray-300 text-4xl mb-3"></i>
+                            <p class="text-gray-500 mb-2">No audit logs found</p>
+                            <p class="text-gray-400 text-sm">Activity will appear here when users perform actions</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if logs %}
+        <div class="px-6 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-500">
+                    Showing {{ logs|length }} of {{ logs|length }} records
+                </p>
+                <div class="flex space-x-2">
+                    <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Log Details Modal -->
+<div id="logDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+        <div class="p-6">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-gray-900">Audit Log Details</h3>
+                <button onclick="closeLogDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Log Details -->
+            <div id="logDetailsContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="mt-8 flex justify-end">
+                <button onclick="closeLogDetailsModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    
+// Filter logs
+function filterLogs(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const params = new URLSearchParams(formData).toString();
+    window.location.href = `${window.location.pathname}?${params}`;
+}
+
+// Export logs
+function exportLogs() {
+    const params = new URLSearchParams(window.location.search);
+    const exportUrl = `/admin/users-roles/audit-logs/export?${params}`;
+    
+    // Create a temporary link to trigger download
+    const link = document.createElement('a');
+    link.href = exportUrl;
+    link.download = 'audit_logs.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showNotification('info', 'Export started. Download will begin shortly.');
+}
+
+// Show log details
+// Show log details
+async function showLogDetails(logId) {
+    try {
+        // Fetch log details from the server
+        const response = await fetch(`/admin/users-roles/audit-logs/${logId}/details`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const log = result.data;
+            const content = document.getElementById('logDetailsContent');
+            
+            // Format timestamp
+            const timestamp = new Date(log.created_at).toLocaleString();
+            
+            // Format user info
+            let userInfo = 'System';
+            if (log.users) {
+                userInfo = `${log.users.first_name || ''} ${log.users.last_name || ''}`.trim();
+                if (log.users.email) {
+                    userInfo += ` (${log.users.email})`;
+                }
+            }
+            
+            // Format action
+            const action = log.action ? log.action.replace(/_/g, ' ').toUpperCase() : 'Unknown';
+            
+            // Format target info
+            let targetInfo = '-';
+            if (log.target_type) {
+                targetInfo = `${log.target_type.toUpperCase()}`;
+                if (log.target_id) {
+                    targetInfo += ` (${log.target_id})`;
+                }
+            }
+            
+            // Format old and new values
+            let oldValuesHtml = '';
+            let newValuesHtml = '';
+            
+            if (log.old_values) {
+                try {
+                    const oldValues = typeof log.old_values === 'string' ? JSON.parse(log.old_values) : log.old_values;
+                    oldValuesHtml = `
+                        <div class="mb-4">
+                            <p class="text-sm text-gray-500 mb-2">Old Values:</p>
+                            <pre class="bg-gray-50 p-3 rounded text-xs overflow-auto max-h-40">${JSON.stringify(oldValues, null, 2)}</pre>
+                        </div>
+                    `;
+                } catch (e) {
+                    oldValuesHtml = `
+                        <div class="mb-4">
+                            <p class="text-sm text-gray-500 mb-2">Old Values:</p>
+                            <pre class="bg-gray-50 p-3 rounded text-xs overflow-auto max-h-40">${log.old_values}</pre>
+                        </div>
+                    `;
+                }
+            }
+            
+            if (log.new_values) {
+                try {
+                    const newValues = typeof log.new_values === 'string' ? JSON.parse(log.new_values) : log.new_values;
+                    newValuesHtml = `
+                        <div class="mb-4">
+                            <p class="text-sm text-gray-500 mb-2">New Values:</p>
+                            <pre class="bg-gray-50 p-3 rounded text-xs overflow-auto max-h-40">${JSON.stringify(newValues, null, 2)}</pre>
+                        </div>
+                    `;
+                } catch (e) {
+                    newValuesHtml = `
+                        <div class="mb-4">
+                            <p class="text-sm text-gray-500 mb-2">New Values:</p>
+                            <pre class="bg-gray-50 p-3 rounded text-xs overflow-auto max-h-40">${log.new_values}</pre>
+                        </div>
+                    `;
+                }
+            }
+            
+            let html = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Timestamp</p>
+                            <p class="font-medium">${timestamp}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Action</p>
+                            <p class="font-medium">${action}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Performed By</p>
+                            <p class="font-medium">${userInfo}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">IP Address</p>
+                            <p class="font-medium">${log.ip_address || '-'}</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm text-gray-500">Target</p>
+                        <p class="font-medium">${targetInfo}</p>
+                    </div>
+                    
+                    ${log.user_agent ? `
+                    <div>
+                        <p class="text-sm text-gray-500">User Agent</p>
+                        <p class="text-sm text-gray-700 bg-gray-50 p-2 rounded">${log.user_agent}</p>
+                    </div>
+                    ` : ''}
+                    
+                    ${oldValuesHtml || newValuesHtml ? `
+                    <div class="border-t border-gray-200 pt-6">
+                        <h4 class="font-medium text-gray-900 mb-3">Changes</h4>
+                        ${oldValuesHtml}
+                        ${newValuesHtml}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            content.innerHTML = html;
+            document.getElementById('logDetailsModal').classList.remove('hidden');
+        } else {
+            showNotification('error', result.message);
+        }
+    } catch (error) {
+        console.error('Error loading log details:', error);
+        showNotification('error', 'Failed to load log details');
+    }
+}
+
+function closeLogDetailsModal() {
+    document.getElementById('logDetailsModal').classList.add('hidden');
+}
+
+// Notification function
+function showNotification(type, message) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'} z-50`;
+    notification.textContent = message;
+    notification.style.animation = 'slideIn 0.3s ease-out';
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,226 @@
+{% extends "posbase.html" %}
+
+{% block title %}Refund Sale - {{ session.business_name or 'POS' }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="sticky top-16 z-30 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Refund Sale</h1>
+                <p class="text-gray-600 mt-1">Invoice: {{ sale.invoice_number }}</p>
+            </div>
+            <a href="{{ url_for('sales_terminal.sales_history') }}" 
+               class="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors duration-200">
+                Back to History
+            </a>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <!-- Sale Summary -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Sale Details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Invoice Number:</span>
+                            <span class="font-medium">{{ sale.invoice_number }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Date:</span>
+                            <span class="font-medium">{{ sale.created_at[:10] }} {{ sale.created_at[11:16] }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Customer:</span>
+                            <span class="font-medium">{{ sale.customer_name or 'Walk-in Customer' }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Total Amount:</span>
+                            <span class="font-bold text-lg text-gray-900">UGX {{ "%.2f"|format(sale.total_amount) }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Payment Method:</span>
+                            <span class="font-medium">{{ sale.payment_method|upper }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Status:</span>
+                            <span class="font-medium {% if sale.payment_status == 'completed' %}text-green-600{% else %}text-gray-600{% endif %}">
+                                {{ sale.payment_status|upper }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sale Items -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Sale Items</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for item in sale_items %}
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="text-sm font-medium text-gray-900">{{ item.product_name }}</div>
+                                {% if item.product_sku %}
+                                <div class="text-xs text-gray-500">{{ item.product_sku }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-900">UGX {{ "%.2f"|format(item.unit_price) }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900">{{ item.quantity }}</td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">UGX {{ "%.2f"|format(item.unit_price * item.quantity) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Refund Options -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">Refund Options</h2>
+            
+            <!-- Full Refund -->
+            <div class="mb-8 pb-8 border-b border-gray-200">
+                <h3 class="text-md font-medium text-gray-900 mb-4">Full Refund</h3>
+                <p class="text-sm text-gray-600 mb-4">Refund the entire sale amount and restock all items.</p>
+                
+                <form method="POST" action="{{ url_for('sales_terminal.refund_sale', sale_id=sale.id) }}">
+                    <input type="hidden" name="action" value="full_refund">
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Refund</label>
+                        <select name="reason" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                            <option value="Customer request">Customer request</option>
+                            <option value="Defective product">Defective product</option>
+                            <option value="Wrong item received">Wrong item received</option>
+                            <option value="Late delivery">Late delivery</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
+                        <textarea name="notes" 
+                                  rows="3" 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                  placeholder="Any additional notes about this refund..."></textarea>
+                    </div>
+                    
+                    <button type="submit" 
+                            onclick="return confirmFullRefund()"
+                            class="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-sm">
+                        Process Full Refund (UGX {{ "%.2f"|format(sale.total_amount) }})
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Partial Refund -->
+            <div>
+                <h3 class="text-md font-medium text-gray-900 mb-4">Partial Refund</h3>
+                <p class="text-sm text-gray-600 mb-4">Refund a specific amount without restocking items.</p>
+                
+                <form method="POST" action="{{ url_for('sales_terminal.refund_sale', sale_id=sale.id) }}">
+                    <input type="hidden" name="action" value="partial_refund">
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Refund Amount</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">UGX</span>
+                            <input type="number" 
+                                   name="refund_amount" 
+                                   step="0.01" 
+                                   min="0.01" 
+                                   max="{{ sale.total_amount }}"
+                                   value="{{ sale.total_amount }}"
+                                   class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                   oninput="updateRefundPreview(this.value)">
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            Maximum: UGX {{ "%.2f"|format(sale.total_amount) }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Refund</label>
+                        <input type="text" 
+                               name="reason" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                               placeholder="Enter reason for partial refund"
+                               value="Partial refund - customer request">
+                    </div>
+                    
+                    <div id="refundPreview" class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-600">Original Amount:</span>
+                            <span class="font-medium">UGX {{ "%.2f"|format(sale.total_amount) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-600">Refund Amount:</span>
+                            <span class="font-medium text-red-600" id="previewAmount">UGX {{ "%.2f"|format(sale.total_amount) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Remaining:</span>
+                            <span class="font-medium text-green-600" id="previewRemaining">UGX 0.00</span>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" 
+                            onclick="return confirmPartialRefund()"
+                            class="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl font-medium hover:from-yellow-700 hover:to-yellow-800 transition-all duration-200 shadow-sm">
+                        Process Partial Refund
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmFullRefund() {
+    return confirm(`Are you sure you want to process a FULL refund for UGX {{ "%.2f"|format(sale.total_amount) }}?\n\nThis will:\n• Refund the full amount to customer\n• Restock all items to inventory\n• Mark sale as refunded`);
+}
+
+function confirmPartialRefund() {
+    const amount = document.querySelector('input[name="refund_amount"]').value;
+    return confirm(`Are you sure you want to process a PARTIAL refund for UGX ${amount}?\n\nThis will:\n• Refund ${amount} to customer\n• Mark sale as partially refunded\n• Items will NOT be restocked`);
+}
+
+function updateRefundPreview(amount) {
+    const originalAmount = {{ sale.total_amount }};
+    const refundAmount = parseFloat(amount) || 0;
+    const remaining = originalAmount - refundAmount;
+    
+    document.getElementById('previewAmount').textContent = `UGX ${refundAmount.toFixed(2)}`;
+    document.getElementById('previewRemaining').textContent = `UGX ${remaining.toFixed(2)}`;
+    
+    // Update validation message
+    if (refundAmount > originalAmount) {
+        document.querySelector('input[name="refund_amount"]').setCustomValidity('Refund amount cannot exceed original sale amount');
+    } else {
+        document.querySelector('input[name="refund_amount"]').setCustomValidity('');
+    }
+}
+
+// Initialize preview
+document.addEventListener('DOMContentLoaded', function() {
+    updateRefundPreview({{ sale.total_amount }});
+});
+</script>
+{% endblock %}

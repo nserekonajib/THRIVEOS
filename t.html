@@ -1,0 +1,1292 @@
+<!-- templates/posbase.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ThriveOS POS System{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-red: #dc2626;
+            --primary-dark: #1f2937;
+            --sidebar-width: 280px;
+            --sidebar-collapsed: 70px;
+            --header-height: 70px;
+        }
+        
+        /* Modern Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+        
+        /* Sidebar Animation */
+        .sidebar-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Active menu item */
+        .active-menu {
+            background: linear-gradient(90deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+            border-left: 3px solid var(--primary-red);
+            color: var(--primary-red);
+            font-weight: 600;
+        }
+        
+        .active-menu i {
+            color: var(--primary-red);
+        }
+        
+        /* Card Hover Effects */
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            border-color: rgba(220, 38, 38, 0.3);
+        }
+        
+        /* Modern Loader */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-red);
+            border-radius: 50%;
+            animation: spin 0.8s cubic-bezier(0.65, 0.05, 0.36, 1) infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Menu Dropdown Styles */
+        .menu-dropdown {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 0;
+            overflow: hidden;
+        }
+        
+        .menu-dropdown.open {
+            max-height: 500px;
+        }
+        
+        .menu-arrow {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .menu-arrow.open {
+            transform: rotate(180deg);
+        }
+        
+        /* Submenu Item */
+        .submenu-item {
+            padding-left: 2.5rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .submenu-item:hover {
+            background-color: rgba(220, 38, 38, 0.05);
+            padding-left: 3rem;
+        }
+        
+        .submenu-item i.fa-circle {
+            font-size: 6px;
+        }
+        
+        /* Section Divider */
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+            margin: 1rem 0;
+        }
+        
+        /* Modern Button Styles */
+        .btn-primary {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+        }
+        
+        /* Flash Messages */
+        .flash-message {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            max-width: 400px;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: top right;
+        }
+        
+        .flash-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border-left: 4px solid #047857;
+        }
+        
+        .flash-error {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border-left: 4px solid #b91c1c;
+        }
+        
+        .flash-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border-left: 4px solid #b45309;
+        }
+        
+        .flash-info {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border-left: 4px solid #1e40af;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100px) scale(0.9);
+            }
+        }
+        
+        .flash-exit {
+            animation: slideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        /* Modern Spinner */
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(220, 38, 38, 0.1);
+            border-top: 4px solid #dc2626;
+            border-radius: 50%;
+            animation: spin 1s ease-in-out infinite;
+            position: relative;
+        }
+        
+        .spinner:after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border: 4px solid transparent;
+            border-top: 4px solid rgba(220, 38, 38, 0.3);
+            border-radius: 50%;
+            animation: spin 1.5s ease-in-out infinite reverse;
+        }
+        
+        /* Glass Morphism */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Gradient Text */
+        .gradient-text {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Status Indicators */
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-online {
+            background: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+        }
+        
+        .status-offline {
+            background: #6b7280;
+            box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.3);
+        }
+        
+        .status-warning {
+            background: #f59e0b;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+        }
+        
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-info {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        /* Page Loader - UPDATED */
+        #page-loader {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 1;
+            pointer-events: auto;
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        #page-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .page-loader-spinner {
+            width: 70px;
+            height: 70px;
+            border: 5px solid #f3f4f6;
+            border-top-color: #dc2626;
+            border-radius: 50%;
+            animation: spin 0.8s cubic-bezier(0.65, 0.05, 0.36, 1) infinite;
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        
+        .page-loader-spinner:after {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            border: 5px solid transparent;
+            border-top-color: rgba(220, 38, 38, 0.3);
+            border-radius: 50%;
+            animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite reverse;
+        }
+        
+        .page-loader-text {
+            color: #374151;
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        
+        /* Menu Hover Effects */
+        .menu-item {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 0.75rem;
+            margin: 0.125rem 0;
+        }
+        
+        .menu-item:hover {
+            background-color: rgba(220, 38, 38, 0.05);
+            transform: translateX(4px);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .flash-message {
+                top: 80px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+            
+            #sidebar {
+                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+    <!-- Flash Messages Container -->
+    <div id="flash-messages"></div>
+    
+    <!-- Page Loader - START HIDDEN -->
+    <div id="page-loader" class="hidden">
+        <div class="page-loader-spinner"></div>
+        <div class="page-loader-text">Loading ThriveOS</div>
+    </div>
+    
+    <!-- Top Navigation Bar -->
+    <nav class="fixed top-0 left-0 right-0 glass-effect shadow-lg z-50" style="height: var(--header-height);">
+        <div class="flex items-center justify-between h-full px-6">
+            <!-- Left: Menu Toggle & Logo -->
+            <div class="flex items-center space-x-4">
+                <button id="sidebarToggle" class="p-3 rounded-xl hover:bg-gray-100 transition-all duration-200 group">
+                    <i class="fas fa-bars text-gray-700 text-lg group-hover:text-red-600"></i>
+                </button>
+                
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="relative">
+                        <img src="https://i.ibb.co/CxNVLMr/Gemini-Generated-Image-7j13hc7j13hc7j13-modified.png"
+                             alt="ThriveOS Logo"
+                             class="h-12 w-12 rounded-xl shadow-lg ring-2 ring-red-100">
+                        <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full ring-2 ring-white"></div>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold gradient-text">ThriveOS</h1>
+                        <p class="text-xs text-gray-500">Point of Sale System</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center: Quick Actions -->
+            <div class="hidden lg:flex items-center space-x-3">
+                <!-- Quick Sale Button -->
+                <button onclick="openQuickSale()" 
+                        class="btn-primary flex items-center space-x-2">
+                    <i class="fas fa-bolt text-yellow-200"></i>
+                    <span>Quick Sale</span>
+                </button>
+                
+                <!-- Cash Drawer Status -->
+                <div class="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                    <div class="relative">
+                        <div class="w-3 h-3 bg-green-500 rounded-full animate-ping opacity-75"></div>
+                        <div class="absolute top-1 left-1 w-1 h-1 bg-green-500 rounded-full"></div>
+                    </div>
+                    <span class="text-sm font-semibold text-green-800">Drawer Open</span>
+                    <span class="text-xs text-green-600">$1,250.45</span>
+                </div>
+            </div>
+            
+            <!-- Right: User & Notifications -->
+            <div class="flex items-center space-x-4">
+                <!-- Current Time -->
+                <div class="hidden md:block px-3 py-1.5 bg-gray-50 rounded-lg">
+                    <div class="text-sm font-semibold text-gray-900" id="currentTime"></div>
+                    <div class="text-xs text-gray-500" id="currentDate"></div>
+                </div>
+                
+                <!-- Notifications -->
+                <button id="notificationsBtn" class="relative p-2.5 rounded-xl hover:bg-gray-100 transition-all duration-200">
+                    <i class="fas fa-bell text-gray-600 text-lg"></i>
+                    <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
+                </button>
+                
+                <!-- User Profile -->
+                <div class="relative group">
+                    <button id="userMenuBtn" class="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-100 transition-all duration-200">
+                        <div class="flex flex-col items-end">
+                            <div class="font-semibold text-gray-900 text-sm">
+                                {{ session.user_name if session.user_name else 'User' }}
+                            </div>
+                            <div class="text-xs text-gray-500">{{ session.user_email if session.user_email else 'Admin' }}</div>
+                        </div>
+                        <div class="relative">
+                            <div class="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 text-white rounded-xl flex items-center justify-center font-bold shadow-lg">
+                                {{ (session.user_name[0] if session.user_name else 'U') | upper }}
+                            </div>
+                            <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full ring-2 ring-white"></div>
+                        </div>
+                        <i class="fas fa-chevron-down text-gray-500 text-sm"></i>
+                    </button>
+                    
+                    <!-- User Dropdown -->
+                    <div id="userDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 z-50 py-2">
+                        <div class="px-4 py-3 border-b">
+                            <div class="font-semibold text-gray-900">{{ session.user_name if session.user_name else 'User' }}</div>
+                            <div class="text-sm text-gray-500 truncate">{{ session.user_email if session.user_email else 'Admin' }}</div>
+                            <div class="mt-2">
+                                <span class="badge badge-success">
+                                    <i class="fas fa-shield-alt mr-1"></i>
+                                    {{ session.user_role if session.user_role else 'Admin' }}
+                                </span>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('dashboard') }}" class="flex items-center px-4 py-2.5 hover:bg-gray-50 text-gray-700">
+                            <i class="fas fa-tachometer-alt w-5 mr-3 text-gray-400"></i>
+                            Dashboard
+                        </a>
+                        <a href="#" class="flex items-center px-4 py-2.5 hover:bg-gray-50 text-gray-700">
+                            <i class="fas fa-cog w-5 mr-3 text-gray-400"></i>
+                            Settings
+                        </a>
+                        <a href="#" class="flex items-center px-4 py-2.5 hover:bg-gray-50 text-gray-700">
+                            <i class="fas fa-question-circle w-5 mr-3 text-gray-400"></i>
+                            Help & Support
+                        </a>
+                        <div class="border-t mt-2 pt-2">
+                            <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-2.5 hover:bg-red-50 text-red-600">
+                                <i class="fas fa-sign-out-alt w-5 mr-3"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Layout -->
+    <div class="flex pt-16">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar-transition fixed left-0 top-16 bottom-0 glass-effect shadow-xl z-40 overflow-y-auto no-scrollbar" style="width: var(--sidebar-width);">
+            <!-- Business Info -->
+            <div class="p-5 border-b">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-red-100 to-pink-100 rounded-xl flex items-center justify-center shadow">
+                        <i class="fas fa-store text-red-600 text-lg"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-bold text-gray-900 truncate text-sm" id="businessName">
+                            {% if session.business_name %}
+                                {{ session.business_name }}
+                            {% else %}
+                                My Business
+                            {% endif %}
+                        </div>
+                        <div class="text-xs text-gray-500 truncate">POS ID: {{ session.business_id if session.business_id else 'THR-001' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Menu -->
+            <nav class="p-4 space-y-1" id="sidebarMenu">
+                <!-- Dashboard -->
+                <a href="{{ url_for('dashboard') }}" 
+                   class="menu-item block px-4 py-3.5 rounded-xl hover:bg-gray-50 flex items-center text-gray-700 group active-menu">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center mr-3 group-hover:from-red-100 group-hover:to-pink-100">
+                        <i class="fas fa-tachometer-alt text-red-600"></i>
+                    </div>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+
+                <!-- Section: Sales & Operations -->
+                <div class="menu-section mt-6">
+                    <button class="menu-header w-full px-4 py-3.5 rounded-xl hover:bg-gray-50 flex items-center justify-between text-gray-700 group"
+                            onclick="toggleMenu('salesMenu')">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center mr-3 group-hover:from-blue-100 group-hover:to-cyan-100">
+                                <i class="fas fa-cash-register text-blue-600"></i>
+                            </div>
+                            <span class="font-semibold text-sm">Sales / Cashier</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="salesArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="salesMenu">
+                        <a href="{{url_for('sales_terminal.terminal')}}" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> New Sale
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Sales History
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Refunds & Returns
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Receipts History
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Section: Customers -->
+                <div class="menu-section">
+                    <button class="menu-header w-full px-4 py-3.5 rounded-xl hover:bg-gray-50 flex items-center justify-between text-gray-700 group"
+                            onclick="toggleMenu('customersMenu')">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center mr-3 group-hover:from-green-100 group-hover:to-emerald-100">
+                                <i class="fas fa-users text-green-600"></i>
+                            </div>
+                            <span class="font-semibold text-sm">Customers & Loyalty</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="customersArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="customersMenu">
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Customers
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Loyalty Points
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Discounts / Promotions
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Section: Products -->
+                <div class="menu-section">
+                    <button class="menu-header w-full px-4 py-3.5 rounded-xl hover:bg-gray-50 flex items-center justify-between text-gray-700 group"
+                            onclick="toggleMenu('productsMenu')">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-50 to-violet-50 flex items-center justify-center mr-3 group-hover:from-purple-100 group-hover:to-violet-100">
+                                <i class="fas fa-boxes text-purple-600"></i>
+                            </div>
+                            <span class="font-semibold text-sm">Products & Inventory</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="productsArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="productsMenu">
+                        <a href="{{url_for('products_inventory.products_dashboard')}}" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Products
+                        </a>
+                        <a href="{{url_for('products_inventory.categories')}}" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Categories
+                        </a>
+                        <a href="{{ url_for('products_inventory.low_stock_report') }}" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Stock Levels
+                        </a>
+                        <a href="{{url_for('products_inventory.product_audit_logs')}}" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Audit Stock
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Section Divider -->
+                <div class="section-divider"></div>
+
+                <!-- Section Header: Security -->
+                <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Security, Users & Anti-Theft
+                </div>
+
+                <!-- Section: Users & Roles -->
+                {% if session.get('is_admin') or session.get('user_role') == 'admin' %}
+                <div class="menu-section">
+                    <button class="menu-header w-full px-4 py-3.5 rounded-xl hover:bg-gray-50 flex items-center justify-between text-gray-700 group"
+                            onclick="toggleMenu('usersMenu')">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center mr-3 group-hover:from-amber-100 group-hover:to-orange-100">
+                                <i class="fas fa-user-shield text-amber-600"></i>
+                            </div>
+                            <span class="font-semibold text-sm">Users & Roles</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="usersArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="usersMenu">
+                        <a href="{{ url_for('user_roles.employees') }}" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Employees
+                        </a>
+                        <a href="{{ url_for('user_roles.roles') }}" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Roles & Permissions
+                        </a>
+                        <a href="{{ url_for('user_roles.audit_logs') }}" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Audit Logs
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Section: Audit Logs -->
+                <div class="menu-section">
+                    <button class="menu-header w-full px-4 py-3.5 rounded-xl hover:bg-gray-50 flex items-center justify-between text-gray-700 group"
+                            onclick="toggleMenu('auditMenu')">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-50 to-slate-50 flex items-center justify-center mr-3 group-hover:from-gray-100 group-hover:to-slate-100">
+                                <i class="fas fa-clipboard-list text-gray-600"></i>
+                            </div>
+                            <span class="font-semibold text-sm">Audit Logs</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="auditArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="auditMenu">
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Activity Log
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Sales Voids / Edits
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Stock Change Log
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Section: Cash Control -->
+                <div class="menu-section">
+                    <button class="menu-header w-full px-4 py-3.5 rounded-xl hover:bg-gray-50 flex items-center justify-between text-gray-700 group"
+                            onclick="toggleMenu('cashMenu')">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center mr-3 group-hover:from-emerald-100 group-hover:to-teal-100">
+                                <i class="fas fa-cash-register text-emerald-600"></i>
+                            </div>
+                            <span class="font-semibold text-sm">Cash & Shift Control</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="cashArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="cashMenu">
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Open / Close Shift
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Cash Drawer Reconciliation
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Z-Reports
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Section: Surveillance -->
+                <div class="menu-section">
+                    <button class="menu-header w-full px-4 py-3.5 rounded-xl hover:bg-gray-50 flex items-center justify-between text-gray-700 group"
+                            onclick="toggleMenu('cameraMenu')">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center mr-3 group-hover:from-indigo-100 group-hover:to-blue-100">
+                                <i class="fas fa-video text-indigo-600"></i>
+                            </div>
+                            <span class="font-semibold text-sm">Surveillance (Camera)</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="cameraArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="cameraMenu">
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Live Monitor
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Recorded Clips
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Session-Tagged Footage
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Section Divider -->
+                <div class="section-divider"></div>
+
+                <!-- Section Header: Financial -->
+                <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Financial & Reporting
+                </div>
+
+                <!-- Section: Reports -->
+                <div class="menu-section">
+                    <button class="menu-header w-full px-4 py-3.5 rounded-xl hover:bg-gray-50 flex items-center justify-between text-gray-700 group"
+                            onclick="toggleMenu('reportsMenu')">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-50 to-pink-50 flex items-center justify-center mr-3 group-hover:from-rose-100 group-hover:to-pink-100">
+                                <i class="fas fa-chart-bar text-rose-600"></i>
+                            </div>
+                            <span class="font-semibold text-sm">Reports</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="reportsArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="reportsMenu">
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Daily Sales
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Weekly / Monthly Sales
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Stock Valuation
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Profit & Loss
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Cash & Bank Reconciliation
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Export (CSV / PDF)
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Section Divider -->
+                <div class="section-divider"></div>
+
+                <!-- Section Header: System -->
+                <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    System & Compliance
+                </div>
+
+                <!-- Section: Settings -->
+                <div class="menu-section">
+                    <button class="menu-header w-full px-4 py-3.5 rounded-xl hover:bg-gray-50 flex items-center justify-between text-gray-700 group"
+                            onclick="toggleMenu('settingsMenu')">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-50 to-gray-50 flex items-center justify-center mr-3 group-hover:from-slate-100 group-hover:to-gray-100">
+                                <i class="fas fa-cog text-slate-600"></i>
+                            </div>
+                            <span class="font-semibold text-sm">Settings</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="settingsArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="settingsMenu">
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Business Profile
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Tax & Currency
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Backup & Cloud Sync
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Security & Encryption
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> UUID / System IDs
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Device Settings
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Section: Help -->
+                <div class="menu-section">
+                    <button class="menu-header w-full px-4 py-3.5 rounded-xl hover:bg-gray-50 flex items-center justify-between text-gray-700 group"
+                            onclick="toggleMenu('helpMenu')">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 flex items-center justify-center mr-3 group-hover:from-cyan-100 group-hover:to-blue-100">
+                                <i class="fas fa-life-ring text-cyan-600"></i>
+                            </div>
+                            <span class="font-semibold text-sm">Help & Support</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="helpArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="helpMenu">
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> System Guide
+                        </a>
+                        <a href="#" class="submenu-item block px-4 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600">
+                            <i class="fas fa-circle text-xs mr-2 text-gray-400"></i> Logs & Diagnostics
+                        </a>
+                    </div>
+                </div>
+
+                <!-- System Status Footer -->
+                <div class="mt-8 p-4 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border border-gray-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm font-semibold text-gray-800">System Status</span>
+                        <span class="px-3 py-1 text-xs font-bold rounded-full bg-gradient-to-r from-green-100 to-emerald-100 text-green-800">
+                            <i class="fas fa-check-circle mr-1"></i> Online
+                        </span>
+                    </div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div class="flex justify-between">
+                            <span>Uptime:</span>
+                            <span class="font-mono font-semibold">99.9%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Response:</span>
+                            <span class="font-mono font-semibold text-green-600">< 100ms</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Last Sync:</span>
+                            <span class="font-mono">Just now</span>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="mainContent" class="sidebar-transition flex-1 ml-0 p-4 md:p-6 min-h-screen">
+            <!-- Flash messages from Flask -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-6 space-y-3">
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}">
+                                <div class="flex items-center">
+                                    {% if category == 'success' %}
+                                        <i class="fas fa-check-circle mr-3 text-lg"></i>
+                                    {% elif category == 'error' %}
+                                        <i class="fas fa-exclamation-circle mr-3 text-lg"></i>
+                                    {% elif category == 'warning' %}
+                                        <i class="fas fa-exclamation-triangle mr-3 text-lg"></i>
+                                    {% else %}
+                                        <i class="fas fa-info-circle mr-3 text-lg"></i>
+                                    {% endif %}
+                                    <div>{{ message }}</div>
+                                </div>
+                                <button onclick="this.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM Content Loaded');
+            
+            // Update current time and date
+            function updateTime() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false
+                });
+                const dateString = now.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+                document.getElementById('currentTime').textContent = timeString;
+                document.getElementById('currentDate').textContent = dateString;
+            }
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // Sidebar Toggle
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            let sidebarOpen = true;
+
+            sidebarToggle.addEventListener('click', function() {
+                sidebarOpen = !sidebarOpen;
+                if (sidebarOpen) {
+                    sidebar.style.width = 'var(--sidebar-width)';
+                    mainContent.style.marginLeft = 'var(--sidebar-width)';
+                } else {
+                    sidebar.style.width = 'var(--sidebar-collapsed)';
+                    mainContent.style.marginLeft = 'var(--sidebar-collapsed)';
+                }
+            });
+
+            // User Dropdown
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userDropdown = document.getElementById('userDropdown');
+            
+            userMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userDropdown.classList.toggle('hidden');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function() {
+                userDropdown.classList.add('hidden');
+            });
+
+            // Notifications
+            document.getElementById('notificationsBtn').addEventListener('click', function() {
+                showNotification('New notification feature coming soon!', 'info');
+            });
+
+            // Responsive sidebar for mobile
+            function handleResize() {
+                if (window.innerWidth < 768) {
+                    sidebar.style.width = '0';
+                    mainContent.style.marginLeft = '0';
+                    sidebarOpen = false;
+                } else {
+                    sidebar.style.width = 'var(--sidebar-width)';
+                    mainContent.style.marginLeft = 'var(--sidebar-width)';
+                    sidebarOpen = true;
+                }
+            }
+
+            window.addEventListener('resize', handleResize);
+            handleResize(); // Initial check
+
+            // Initialize menu states from localStorage
+            initializeMenuStates();
+
+            // System status check
+            checkSystemStatus();
+
+            // Auto-hide flash messages
+            autoHideFlashMessages();
+
+            // Initialize page loader - FIXED
+            initializePageLoader();
+
+            // Highlight active menu
+            setTimeout(highlightActiveMenu, 100);
+        });
+
+        // Menu Toggle Function
+        function toggleMenu(menuId) {
+            const menu = document.getElementById(menuId);
+            const arrow = document.getElementById(menuId.replace('Menu', 'Arrow'));
+            
+            // Toggle the menu
+            menu.classList.toggle('open');
+            arrow.classList.toggle('open');
+            
+            // Save state to localStorage
+            localStorage.setItem(menuId, menu.classList.contains('open'));
+        }
+
+        // Initialize menu states
+        function initializeMenuStates() {
+            const menuIds = [
+                'salesMenu', 'customersMenu', 'productsMenu', 'stockMenu',
+                'usersMenu', 'auditMenu', 'cashMenu', 'cameraMenu',
+                'reportsMenu', 'settingsMenu', 'helpMenu'
+            ];
+            
+            menuIds.forEach(menuId => {
+                const savedState = localStorage.getItem(menuId);
+                const menu = document.getElementById(menuId);
+                const arrow = document.getElementById(menuId.replace('Menu', 'Arrow'));
+                
+                if (savedState === 'true') {
+                    menu.classList.add('open');
+                    arrow.classList.add('open');
+                }
+            });
+        }
+
+        // Quick Sale Functions
+        function openQuickSale() {
+            showNotification('Opening Quick Sale...', 'info');
+            // Implementation would go here
+        }
+
+        // Flash Messages System
+        function showFlashMessage(message, type = 'info', duration = 5000) {
+            const flashContainer = document.getElementById('flash-messages');
+            const flashId = 'flash-' + Date.now();
+            
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+            
+            const flash = document.createElement('div');
+            flash.id = flashId;
+            flash.className = `flash-message flash-${type}`;
+            flash.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${icons[type]} mr-3 text-lg"></i>
+                    <div>${message}</div>
+                </div>
+                <button onclick="removeFlashMessage('${flashId}')" class="ml-4 text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            flashContainer.appendChild(flash);
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    removeFlashMessage(flashId);
+                }, duration);
+            }
+            
+            return flashId;
+        }
+        
+        function removeFlashMessage(id) {
+            const flash = document.getElementById(id);
+            if (flash) {
+                flash.classList.add('flash-exit');
+                setTimeout(() => {
+                    if (flash.parentNode) {
+                        flash.parentNode.removeChild(flash);
+                    }
+                }, 300);
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            showFlashMessage(message, type, 3000);
+        }
+        
+        function autoHideFlashMessages() {
+            setTimeout(() => {
+                document.querySelectorAll('.flash-message').forEach(flash => {
+                    if (!flash.classList.contains('flash-exit')) {
+                        removeFlashMessage(flash.id);
+                    }
+                });
+            }, 5000);
+        }
+
+        // System Status
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/api/health');
+                if (response.ok) {
+                    console.log('✅ System is healthy');
+                }
+            } catch (error) {
+                console.log('⚠️ System status check failed');
+            }
+        }
+
+        // Page Loader - FIXED VERSION
+        function initializePageLoader() {
+            const loader = document.getElementById("page-loader");
+            
+            // Show loader immediately when page starts loading
+            loader.classList.remove("hidden");
+            
+            // Hide loader when DOM is fully loaded
+            window.addEventListener('DOMContentLoaded', () => {
+                console.log('✅ DOM fully loaded - hiding loader');
+                setTimeout(() => {
+                    loader.classList.add("hidden");
+                }, 300);
+            });
+            
+            // Hide loader when all resources are loaded
+            window.addEventListener('load', () => {
+                console.log('✅ All resources loaded - hiding loader');
+                // Force hide after a maximum of 2 seconds
+                setTimeout(() => {
+                    loader.classList.add("hidden");
+                }, 2000);
+            });
+            
+            // Show loader on form submissions
+            document.addEventListener('submit', (e) => {
+                // Only show for actual form submissions, not form validation
+                if (e.target.tagName === 'FORM' && !e.target.hasAttribute('novalidate')) {
+                    loader.classList.remove("hidden");
+                }
+            });
+            
+            // Show loader on internal navigation links
+            document.addEventListener('click', (e) => {
+                const link = e.target.closest('a');
+                if (link && link.href) {
+                    // Check if it's an internal link (same origin)
+                    const url = new URL(link.href);
+                    const currentUrl = new URL(window.location.href);
+                    
+                    if (url.origin === currentUrl.origin && 
+                        !link.target && 
+                        !link.href.startsWith('#') && 
+                        !link.href.includes('javascript:') &&
+                        !link.classList.contains('no-loader')) {
+                        
+                        loader.classList.remove("hidden");
+                    }
+                }
+            });
+        }
+
+        // Highlight active menu based on current page
+        function highlightActiveMenu() {
+            const currentPath = window.location.pathname;
+            const menuItems = document.querySelectorAll('#sidebarMenu a');
+            
+            menuItems.forEach(item => {
+                item.classList.remove('active-menu');
+                if (item.getAttribute('href') === currentPath) {
+                    item.classList.add('active-menu');
+                    
+                    // Open parent menu if it's a submenu
+                    const parentMenu = item.closest('.menu-dropdown');
+                    if (parentMenu) {
+                        parentMenu.classList.add('open');
+                        const arrowId = parentMenu.id.replace('Menu', 'Arrow');
+                        const arrow = document.getElementById(arrowId);
+                        if (arrow) arrow.classList.add('open');
+                    }
+                }
+            });
+        }
+
+        // Performance monitoring
+        window.addEventListener('load', () => {
+            let pageLoadTime = Date.now() - performance.timing.navigationStart;
+            console.log(`🚀 ThriveOS POS loaded in ${pageLoadTime}ms`);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl + N for new sale
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                openQuickSale();
+            }
+            
+            // Esc to close modals
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.flash-message').forEach(flash => {
+                    removeFlashMessage(flash.id);
+                });
+            }
+            
+            // Alt + 1-9 for quick menu access
+            if (e.altKey && e.key >= '1' && e.key <= '9') {
+                e.preventDefault();
+                const menuIds = [
+                    'salesMenu', 'customersMenu', 'productsMenu', 'usersMenu',
+                    'auditMenu', 'cashMenu', 'cameraMenu', 'reportsMenu',
+                    'settingsMenu'
+                ];
+                
+                const menuIndex = parseInt(e.key) - 1;
+                if (menuIndex < menuIds.length) {
+                    toggleMenu(menuIds[menuIndex]);
+                }
+            }
+        });
+
+        // Auto-collapse menus on mobile when clicking outside
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth < 768) {
+                const sidebar = document.getElementById('sidebar');
+                if (!sidebar.contains(e.target) && !e.target.closest('#sidebarToggle')) {
+                    document.querySelectorAll('.menu-dropdown.open').forEach(menu => {
+                        menu.classList.remove('open');
+                        const arrowId = menu.id.replace('Menu', 'Arrow');
+                        const arrow = document.getElementById(arrowId);
+                        if (arrow) arrow.classList.remove('open');
+                    });
+                }
+            }
+        });
+
+        // Auto-refresh dashboard data
+        setInterval(() => {
+            // This would fetch live data in a real app
+            console.log('🔄 Auto-refreshing dashboard data...');
+        }, 30000);
+
+        // Add global helper function to show loading state
+        function showLoading(selector) {
+            const element = document.querySelector(selector);
+            if (element) {
+                const originalContent = element.innerHTML;
+                element.innerHTML = '<div class="spinner mx-auto"></div>';
+                element.setAttribute('data-original-content', originalContent);
+                element.setAttribute('data-loading', 'true');
+            }
+        }
+
+        function hideLoading(selector) {
+            const element = document.querySelector(selector);
+            if (element && element.getAttribute('data-loading') === 'true') {
+                element.innerHTML = element.getAttribute('data-original-content');
+                element.removeAttribute('data-loading');
+                element.removeAttribute('data-original-content');
+            }
+        }
+        
+        // Global function to show/hide page loader manually
+        window.showPageLoader = function() {
+            const loader = document.getElementById("page-loader");
+            loader.classList.remove("hidden");
+        };
+        
+        window.hidePageLoader = function() {
+            const loader = document.getElementById("page-loader");
+            loader.classList.add("hidden");
+        };
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

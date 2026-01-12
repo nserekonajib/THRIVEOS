@@ -1,0 +1,730 @@
+{% extends "posbase.html" %}
+
+{% block title %}Sales History - {{ session.business_name or 'POS' }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .sale-row {
+        transition: all 0.2s ease;
+    }
+    
+    .sale-row:hover {
+        background: #f8fafc;
+    }
+    
+    .payment-method-chip {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        background: #f3f4f6;
+        color: #4b5563;
+    }
+    
+    .date-picker {
+        border: 1px solid #d1d5db;
+        border-radius: 0.75rem;
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .date-picker:focus {
+        outline: none;
+        ring: 2px;
+        ring-color: #dc2626;
+        border-color: #dc2626;
+    }
+    
+    .table-header {
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+    }
+    
+    .action-btn {
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-1px);
+    }
+    
+    .pagination-btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .pagination-btn:hover:not(:disabled) {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+    }
+    
+    .pagination-btn.active {
+        background: #dc2626;
+        color: white;
+        border-color: #dc2626;
+    }
+    
+    .export-btn {
+        background: linear-gradient(135deg, #059669, #047857);
+        color: white;
+        padding: 0.625rem 1.25rem;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .export-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.3);
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.3s ease-out;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="sticky top-16 z-30 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Sales History</h1>
+                <p class="text-gray-600 mt-1">Track and analyze your sales performance</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('sales_terminal.terminal') }}" 
+                   class="px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-sm flex items-center gap-2">
+                    <i class="fas fa-plus text-sm"></i>
+                    <span>New Sale</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="p-6 space-y-6">
+        <!-- Filter Section -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Filter Sales</h2>
+            <form method="GET" action="{{ url_for('sales_terminal.sales_history') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <!-- Date Range -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>
+                        Start Date
+                    </label>
+                    <input type="date" 
+                           name="start_date" 
+                           value="{{ request.args.get('start_date', '') }}"
+                           class="date-picker w-full">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>
+                        End Date
+                    </label>
+                    <input type="date" 
+                           name="end_date" 
+                           value="{{ request.args.get('end_date', '') }}"
+                           class="date-picker w-full">
+                </div>
+                
+                <!-- Payment Method -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-credit-card mr-2 text-gray-400"></i>
+                        Payment Method
+                    </label>
+                    <select name="payment_method" 
+                            class="date-picker w-full bg-white">
+                        <option value="">All Methods</option>
+                        <option value="cash" {% if request.args.get('payment_method') == 'cash' %}selected{% endif %}>Cash</option>
+                        <option value="card" {% if request.args.get('payment_method') == 'card' %}selected{% endif %}>Card</option>
+                        <option value="mobile_money" {% if request.args.get('payment_method') == 'mobile_money' %}selected{% endif %}>Mobile Money</option>
+                        <option value="pesapal" {% if request.args.get('payment_method') == 'pesapal' %}selected{% endif %}>PesaPal</option>
+                    </select>
+                </div>
+                
+                <!-- Status -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-check-circle mr-2 text-gray-400"></i>
+                        Status
+                    </label>
+                    <select name="status" 
+                            class="date-picker w-full bg-white">
+                        <option value="">All Statuses</option>
+                        <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="cancelled" {% if request.args.get('status') == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                        <option value="refunded" {% if request.args.get('status') == 'refunded' %}selected{% endif %}>Refunded</option>
+                    </select>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="md:col-span-4 flex items-center justify-between pt-4 border-t border-gray-200">
+                    <div>
+                        <button type="submit" 
+                                class="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-sm flex items-center gap-2">
+                            <i class="fas fa-filter text-sm"></i>
+                            Apply Filters
+                        </button>
+                        
+                        <a href="{{ url_for('sales_terminal.sales_history') }}" 
+                           class="ml-3 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors duration-200">
+                            Clear Filters
+                        </a>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="exportToCSV()" 
+                                class="export-btn flex items-center gap-2">
+                            <i class="fas fa-file-export text-sm"></i>
+                            Export CSV
+                        </button>
+                        
+                        <button type="button" onclick="printReport()" 
+                                class="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center gap-2">
+                            <i class="fas fa-print text-sm"></i>
+                            Print
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Today's Sales -->
+            <div class="stat-card bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Today's Sales</p>
+                        <p class="text-2xl font-bold text-gray-900">UGX {{ "%.2f"|format(today_total) }}</p>
+                    </div>
+                    <div class="p-3 bg-red-100 rounded-xl">
+                        <i class="fas fa-shopping-cart text-xl text-red-600"></i>
+                    </div>
+                </div>
+                <div class="mt-4 text-xs text-gray-500">
+                    <i class="fas fa-calendar-day mr-1"></i>
+                    {{ current_date }}
+                </div>
+            </div>
+            
+            <!-- Total Sales Count -->
+            <div class="stat-card bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Sales</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ sales|length }}</p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-xl">
+                        <i class="fas fa-chart-line text-xl text-blue-600"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <span class="text-xs text-gray-500">
+                        <i class="fas fa-filter mr-1"></i>
+                        Applied filters
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Average Sale -->
+            <div class="stat-card bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Average Sale</p>
+                        {% set total_amount = sales|sum(attribute='total_amount') %}
+                        <p class="text-2xl font-bold text-gray-900">
+                            {% if sales and sales|length > 0 %}
+                                UGX {{ "%.2f"|format(total_amount / sales|length) }}
+                            {% else %}
+                                UGX 0.00
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-emerald-100 rounded-xl">
+                        <i class="fas fa-calculator text-xl text-emerald-600"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="text-xs text-gray-500">
+                        <i class="fas fa-chart-pie mr-1"></i>
+                        Per transaction average
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top Payment Method -->
+            <div class="stat-card bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Popular Method</p>
+                        <p class="text-lg font-bold text-gray-900">
+                            {% if payment_method_counts and payment_method_counts|length > 0 %}
+                                {{ payment_method_counts[0][0]|upper }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-xl">
+                        <i class="fas fa-money-check-alt text-xl text-purple-600"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="text-xs text-gray-500">
+                        <i class="fas fa-chart-bar mr-1"></i>
+                        Most used payment method
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <!-- Table Header -->
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-900">Recent Sales</h2>
+                <div class="text-sm text-gray-500">
+                    Showing {{ sales|length }} sales
+                </div>
+            </div>
+            
+            {% if sales %}
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr class="table-header">
+                            <th class="px-6 py-3 text-left">
+                                Invoice
+                            </th>
+                            <th class="px-6 py-3 text-left">
+                                Date & Time
+                            </th>
+                            <th class="px-6 py-3 text-left">
+                                Customer
+                            </th>
+                            <th class="px-6 py-3 text-left">
+                                Items
+                            </th>
+                            <th class="px-6 py-3 text-left">
+                                Amount
+                            </th>
+                            <th class="px-6 py-3 text-left">
+                                Payment
+                            </th>
+                            <th class="px-6 py-3 text-left">
+                                Status
+                            </th>
+                            <th class="px-6 py-3 text-left">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for sale in sales %}
+                        <tr class="sale-row fade-in">
+                            <!-- Invoice -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-semibold text-gray-900 font-mono">
+                                    {{ sale.invoice_number or 'N/A' }}
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <i class="fas fa-hashtag mr-1"></i>
+                                    {{ sale.id[:8] if sale.id else 'N/A' }}
+                                </div>
+                            </td>
+                            
+                            <!-- Date & Time -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ sale.created_at[:10] if sale.created_at else 'N/A' }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {{ sale.created_at[11:16] if sale.created_at else '' }}
+                                </div>
+                            </td>
+                            
+                            <!-- Customer -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-3">
+                                        <i class="fas fa-user text-gray-500 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ sale.customer_name or 'Walk-in Customer' }}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            {% if sale.customer_phone %}
+                                                {{ sale.customer_phone }}
+                                            {% else %}
+                                                No contact
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Items -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900 font-medium">
+                                    {{ sale.item_count }} items
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {{ sale.total_quantity }} units
+                                </div>
+                            </td>
+                            
+                            <!-- Amount -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-lg font-bold text-gray-900">
+                                    UGX {{ "%.2f"|format(sale.total_amount) if sale.total_amount else '0.00' }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {% if sale.tax_amount %}
+                                        Tax: UGX {{ "%.2f"|format(sale.tax_amount) }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
+                            <!-- Payment -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="payment-method-chip flex items-center gap-1">
+                                    {% if sale.payment_method == 'cash' %}
+                                        <i class="fas fa-money-bill-wave text-xs"></i>
+                                        CASH
+                                    {% elif sale.payment_method == 'card' %}
+                                        <i class="fas fa-credit-card text-xs"></i>
+                                        CARD
+                                    {% elif sale.payment_method == 'mobile_money' %}
+                                        <i class="fas fa-mobile-alt text-xs"></i>
+                                        MOBILE MONEY
+                                    {% elif sale.payment_method == 'pesapal' %}
+                                        <i class="fas fa-wallet text-xs"></i>
+                                        PESAPAL
+                                    {% else %}
+                                        <i class="fas fa-question-circle text-xs"></i>
+                                        {{ sale.payment_method|default('UNKNOWN')|upper }}
+                                    {% endif %}
+                                </span>
+                            </td>
+                            
+                            <!-- Status -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if sale.payment_status == 'completed' %}
+                                <span class="status-badge bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle text-xs"></i>
+                                    COMPLETED
+                                </span>
+                                {% elif sale.payment_status == 'pending' %}
+                                <span class="status-badge bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-clock text-xs"></i>
+                                    PENDING
+                                </span>
+                                {% elif sale.payment_status == 'cancelled' %}
+                                <span class="status-badge bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle text-xs"></i>
+                                    CANCELLED
+                                </span>
+                                {% elif sale.payment_status == 'refunded' %}
+                                <span class="status-badge bg-purple-100 text-purple-800">
+                                    <i class="fas fa-undo text-xs"></i>
+                                    REFUNDED
+                                </span>
+                                {% else %}
+                                <span class="status-badge bg-gray-100 text-gray-800">
+                                    <i class="fas fa-question-circle text-xs"></i>
+                                    {{ sale.payment_status|default('UNKNOWN')|upper }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Actions -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <a href="{{ url_for('sales_terminal.receipt', sale_id=sale.id) }}" 
+                                       class="action-btn bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center gap-1">
+                                        <i class="fas fa-eye text-xs"></i>
+                                        View
+                                    </a>
+                                    
+                                   
+                                    
+                               
+                                    {% if sale.payment_status == 'completed' or sale.payment_status == 'partially_refunded' %}
+                                    <a href="{{ url_for('sales_terminal.refund_sale', sale_id=sale.id) }}" 
+                                    class="action-btn bg-red-50 text-red-700 hover:bg-red-100 flex items-center gap-1">
+                                        <i class="fas fa-undo text-xs"></i>
+                                        {% if sale.payment_status == 'partially_refunded' %}
+                                            Additional Refund
+                                        {% else %}
+                                            Refund
+                                        {% endif %}
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pages and pages > 1 %}
+            <div class="px-6 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-500">
+                        Page {{ page }} of {{ pages }}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        {% if page > 1 %}
+                        <a href="?page={{ page-1 }}{% for key, value in request.args.items() %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="pagination-btn">
+                            <i class="fas fa-chevron-left text-xs"></i>
+                            Previous
+                        </a>
+                        {% endif %}
+                        
+                        {% if pages %}
+                            {% for p in range(1, pages+1) %}
+                                {% if p >= page-2 and p <= page+2 %}
+                                <a href="?page={{ p }}{% for key, value in request.args.items() %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                   class="pagination-btn {% if p == page %}active{% endif %}">
+                                    {{ p }}
+                                </a>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        
+                        {% if page < pages %}
+                        <a href="?page={{ page+1 }}{% for key, value in request.args.items() %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="pagination-btn">
+                            Next
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-12">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                    <i class="fas fa-receipt text-2xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No sales found</h3>
+                <p class="text-gray-500 mb-6">No sales match your current filters. Try adjusting your search criteria.</p>
+                <div class="flex justify-center gap-3">
+                    <a href="{{ url_for('sales_terminal.sales_history') }}" 
+                       class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200">
+                        Clear Filters
+                    </a>
+                    <a href="{{ url_for('sales_terminal.terminal') }}" 
+                       class="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200">
+                        Start New Sale
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Success Toast -->
+<div id="successToast" class="fixed top-24 right-6 z-50 hidden">
+    <div class="bg-green-500 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 fade-in">
+        <i class="fas fa-check-circle text-xl"></i>
+        <div>
+            <div class="font-medium" id="toastMessage">Action completed successfully</div>
+            <div class="text-sm opacity-90">Operation successful</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize date pickers
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates if not set
+    const startDate = document.querySelector('input[name="start_date"]');
+    const endDate = document.querySelector('input[name="end_date"]');
+    
+    if (startDate && !startDate.value) {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        startDate.value = weekAgo.toISOString().split('T')[0];
+    }
+    
+    if (endDate && !endDate.value) {
+        endDate.value = new Date().toISOString().split('T')[0];
+    }
+    
+    // Add export functionality
+    window.exportToCSV = function() {
+        showToast('Exporting sales data to CSV...', 'success');
+        // In a real implementation, this would trigger a server-side CSV export
+        setTimeout(() => {
+            showToast('CSV export completed', 'success');
+        }, 1500);
+    };
+    
+    window.printReport = function() {
+        window.print();
+        showToast('Print dialog opened', 'success');
+    };
+    
+    window.printReceipt = function(saleId) {
+        showToast('Printing receipt for sale ' + saleId.substring(0, 8), 'success');
+        // In a real implementation, this would open a receipt print dialog
+    };
+    
+    window.refundSale = function(saleId) {
+        if (confirm('Are you sure you want to refund this sale?')) {
+            showToast('Processing refund for sale ' + saleId.substring(0, 8), 'success');
+            // In a real implementation, this would initiate a refund process
+        }
+    };
+});
+
+// Toast notification system
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('successToast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    toast.className = `fixed top-24 right-6 z-50 fade-in`;
+    toast.classList.remove('hidden');
+    
+    if (type === 'error') {
+        toast.classList.add('bg-red-500');
+        toast.classList.remove('bg-green-500');
+    } else {
+        toast.classList.add('bg-green-500');
+        toast.classList.remove('bg-red-500');
+    }
+    
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('opacity-0');
+        toast.classList.add('translate-x-full');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+            toast.classList.remove('opacity-0');
+            toast.classList.remove('translate-x-full');
+        }, 300);
+    }, 3000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Focus search on Ctrl + F
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[type="date"]');
+        if (searchInput) searchInput.focus();
+    }
+    
+    // Export on Ctrl + E
+    if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        exportToCSV();
+    }
+    
+    // Print on Ctrl + P
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        printReport();
+    }
+});
+
+// Quick date range buttons (optional - could be added to the template)
+function setDateRange(range) {
+    const today = new Date();
+    const startDate = document.querySelector('input[name="start_date"]');
+    const endDate = document.querySelector('input[name="end_date"]');
+    
+    if (!endDate || !startDate) return;
+    
+    endDate.value = today.toISOString().split('T')[0];
+    
+    switch(range) {
+        case 'today':
+            startDate.value = today.toISOString().split('T')[0];
+            break;
+        case 'yesterday':
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            startDate.value = yesterday.toISOString().split('T')[0];
+            break;
+        case 'week':
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            startDate.value = weekAgo.toISOString().split('T')[0];
+            break;
+        case 'month':
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            startDate.value = monthAgo.toISOString().split('T')[0];
+            break;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,297 @@
+{% extends "posbase.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Page Header -->
+        <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div class="mb-4 sm:mb-0">
+                <h1 class="text-3xl font-bold text-gray-900">{{ title }}</h1>
+                <p class="mt-1 text-sm text-gray-600">Expenses analysis and report</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('reports.reports_dashboard') }}"
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Back to Reports
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="bg-white shadow rounded-lg p-6 mb-8">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Report Period</h3>
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                    <input type="date" name="start_date" id="start_date" 
+                           value="{{ start_date }}"
+                           class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+                    <input type="date" name="end_date" id="end_date" 
+                           value="{{ end_date }}"
+                           class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit"
+                            class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition ease-in-out duration-150">
+                        Update Report
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% if expenses_summary %}
+        <!-- Report Actions -->
+        <div class="mb-6 flex justify-end">
+            <form method="POST" class="inline">
+                <input type="hidden" name="start_date" value="{{ start_date }}">
+                <input type="hidden" name="end_date" value="{{ end_date }}">
+                <button type="submit" name="export" value="pdf"
+                        class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition ease-in-out duration-150">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Export as PDF
+                </button>
+            </form>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Expenses -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-red-500 rounded-md p-3">
+                            <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-6h6m6 1a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Expenses</dt>
+                                <dd class="text-2xl font-semibold text-gray-900">{{ expenses_summary.total_expenses }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Amount -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
+                            <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Amount</dt>
+                                <dd class="text-2xl font-semibold text-gray-900">{{ expenses_summary.total_amount|currency }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Expense -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
+                            <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Average Expense</dt>
+                                <dd class="text-2xl font-semibold text-gray-900">{{ expenses_summary.average_expense|currency }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-purple-500 rounded-md p-3">
+                            <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Categories</dt>
+                                <dd class="text-2xl font-semibold text-gray-900">{{ expenses_summary.categories|length }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Breakdown -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Category Chart -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Expenses by Category</h3>
+                <div class="h-64">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Status Breakdown -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Status Breakdown</h3>
+                <div class="space-y-4">
+                    {% for status, data in expenses_summary.statuses.items() %}
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">{{ status|title }}</span>
+                            <span class="text-sm text-gray-500">{{ data.count }} expenses ({{ data.amount|currency }})</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            {% set percentage = (data.count / expenses_summary.total_expenses * 100) if expenses_summary.total_expenses > 0 else 0 %}
+                            <div class="{% if status == 'approved' %}bg-green-600{% elif status == 'pending' %}bg-yellow-600{% else %}bg-red-600{% endif %} h-2 rounded-full" 
+                                 style="width: {{ percentage }}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Expenses Table -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Expenses</h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">Last 20 expenses in the selected period</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Vendor
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Category
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Description
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Amount
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for expense in expenses_summary.expenses_list %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ expense.expense_date|date_format }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ expense.vendor or 'N/A' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ expense.category }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                {{ expense.description or '-' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                {{ expense.amount|currency }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% set status_color = {
+                                    'approved': 'bg-green-100 text-green-800',
+                                    'pending': 'bg-yellow-100 text-yellow-800',
+                                    'rejected': 'bg-red-100 text-red-800'
+                                } %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ status_color.get(expense.status, 'bg-gray-100 text-gray-800') }}">
+                                    {{ expense.status|title }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- No Data Message -->
+        <div class="bg-white shadow rounded-lg p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-6h6m6 1a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No expenses data</h3>
+            <p class="mt-1 text-sm text-gray-500">No expenses found for the selected period.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if expenses_summary %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Category Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        
+        // Get top 6 categories by amount
+        const categories = Object.entries({{ expenses_summary.categories|tojson }});
+        categories.sort((a, b) => b[1].amount - a[1].amount);
+        const topCategories = categories.slice(0, 6);
+        
+        const categoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: topCategories.map(cat => cat[0]),
+                datasets: [{
+                    data: topCategories.map(cat => cat[1].amount),
+                    backgroundColor: [
+                        'rgb(239, 68, 68)',
+                        'rgb(59, 130, 246)',
+                        'rgb(245, 158, 11)',
+                        'rgb(16, 185, 129)',
+                        'rgb(139, 92, 246)',
+                        'rgb(236, 72, 153)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

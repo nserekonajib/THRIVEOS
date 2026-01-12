@@ -1,0 +1,107 @@
+{% extends "posbase.html" %}
+
+{% block title %}Add Supplier - {{ business_name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{{ url_for('products_inventory.suppliers_list') }}" 
+           class="inline-flex items-center text-blue-600 hover:text-blue-800 transition duration-150">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Suppliers
+        </a>
+    </div>
+
+    <!-- Form Container -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Add New Supplier</h1>
+            <p class="text-gray-600 mt-2">Enter supplier information</p>
+        </div>
+
+        <form method="POST" class="space-y-6">
+            <!-- Supplier Name -->
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                    Supplier Name *
+                </label>
+                <input type="text" 
+                       id="name" 
+                       name="name" 
+                       required
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                       placeholder="Enter supplier company name">
+            </div>
+
+            <!-- Contact Information -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Contact Person -->
+                <div>
+                    <label for="contact" class="block text-sm font-medium text-gray-700 mb-2">
+                        Contact Person
+                    </label>
+                    <input type="text" 
+                           id="contact" 
+                           name="contact" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                           placeholder="Primary contact name">
+                </div>
+
+                <!-- Phone -->
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number
+                    </label>
+                    <input type="tel" 
+                           id="phone" 
+                           name="phone" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                           placeholder="Phone number">
+                </div>
+            </div>
+
+            <!-- Email and Address -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Email -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address
+                    </label>
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                           placeholder="Email address">
+                </div>
+
+                <!-- Address -->
+                <div class="md:col-span-2">
+                    <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
+                        Address
+                    </label>
+                    <textarea id="address" 
+                              name="address" 
+                              rows="3"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                              placeholder="Supplier address"></textarea>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('products_inventory.suppliers_list') }}" 
+                   class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition duration-200">
+                    Add Supplier
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

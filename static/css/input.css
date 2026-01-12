@@ -1,0 +1,17 @@
+/* static/css/input.css */
+@import "tailwindcss";
+
+/* Customize Tailwind */
+@theme {
+  --color-primary: #3b82f6;
+  --color-secondary: #10b981;
+}
+
+/* Custom styles */
+.btn {
+  @apply px-4 py-2 rounded font-semibold;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:bg-primary/90;
+}

@@ -1,0 +1,64 @@
+<!-- templates/dashboard.html -->
+{% extends "posbase.html" %}
+
+{% block title %}Dashboard - ThriveOS POS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+        border: 1px solid #e5e7eb;
+    }
+    
+    .chart-container {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        padding: 1.5rem;
+    }
+    
+    .quick-action {
+        transition: all 0.2s ease;
+    }
+    
+    .quick-action:hover {
+        transform: translateY(-3px);
+        background-color: #fef2f2;
+    }
+    
+    .recent-sale:hover {
+        background-color: #f9fafb;
+    }
+    
+    .low-stock {
+        background-color: #fef2f2;
+        border-left: 4px solid #dc2626;
+    }
+    
+    .high-performance {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Welcome & Performance Stats -->
+    <div class="mb-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">
+                    Welcome back, {{ session.user_name if session.user_name else 'Admin' }}!
+                </h1>
+                <p class="text-gray-600 mt-1">Here's what's happening with your business today.</p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <div class="inline-flex items-center px-4 py-2 rounded-full high-performance text-white text-sm font-semibold">
+                    <i class="fas fa-bolt mr-2"></i>
+                    High-Speed Mode Active
+                </div>
+            </div>
+        </div>
+        
+        
+{% endblock %}

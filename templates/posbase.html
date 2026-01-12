@@ -1,0 +1,991 @@
+<!-- templates/posbase.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ThriveOS POS System{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-red: #dc2626;
+            --primary-red-light: #fee2e2;
+            --primary-dark: #111827;
+            --sidebar-width: 280px;
+            --sidebar-collapsed: 72px;
+            --header-height: 64px;
+        }
+        
+        /* Modern Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Smooth Transitions */
+        .transition-all-300 {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .transition-transform-300 {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Glass Morphism Effects */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        /* Modern Card Shadows */
+        .card-shadow {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 
+                        0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        
+        .card-shadow-hover {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 
+                        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* Gradient Effects */
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary-red), #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Sidebar Animation */
+        .sidebar-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Active menu item */
+        .active-menu {
+            background: linear-gradient(90deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+            border-left: 3px solid var(--primary-red);
+            color: var(--primary-red);
+            font-weight: 600;
+        }
+        
+        .active-menu i {
+            color: var(--primary-red) !important;
+        }
+        
+        /* Modern Loader */
+        .modern-spinner {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: conic-gradient(#0000 10%, var(--primary-red));
+            -webkit-mask: radial-gradient(farthest-side,#0000 calc(100% - 8px),#000 0);
+            animation: spin 0.8s infinite linear;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(1turn); }
+        }
+        
+        /* Pulse Animation */
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse-slow {
+            animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Menu Dropdown Animation */
+        .menu-dropdown {
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        
+        .menu-dropdown.open {
+            max-height: 500px;
+            opacity: 1;
+        }
+        
+        /* Menu arrow rotation */
+        .menu-arrow {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .menu-arrow.open {
+            transform: rotate(180deg);
+        }
+        
+        /* Modern Input Focus */
+        .input-focus:focus {
+            outline: none;
+            ring: 2px;
+            ring-color: var(--primary-red);
+            border-color: var(--primary-red);
+        }
+        
+        /* Gradient Border */
+        .gradient-border {
+            position: relative;
+            border-radius: 0.5rem;
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(135deg, var(--primary-red), #ef4444) border-box;
+            border: 2px solid transparent;
+        }
+        
+        /* Notification Badge */
+        .notification-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(135deg, #f97316, #dc2626);
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        
+        /* Modern Button */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-red), #ef4444);
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.4);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        /* Ripple Effect */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.7);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+        }
+        
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        /* Flash Message Animation */
+        .flash-message {
+            animation: slideDown 0.3s ease-out, fadeOut 0.3s ease-out 4.7s;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+        }
+        
+        /* Skeleton Loading Animation */
+        .skeleton-wave {
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.6) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            background-size: 200% 100%;
+            animation: wave 1.5s infinite;
+        }
+        
+        @keyframes wave {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+        
+        /* Page Transition */
+        .page-transition {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+    <!-- Global Flash Messages Container -->
+    <div id="flash-messages" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[100] space-y-2 w-full max-w-md"></div>
+
+    <!-- Modern Page Loader -->
+    <div id="page-loader" class="fixed inset-0 z-[9999] flex items-center justify-center bg-white/90 backdrop-blur-sm transition-all duration-300">
+        <div class="text-center">
+            <div class="modern-spinner mb-4"></div>
+            <div class="text-sm text-gray-600 font-medium">Loading ThriveOS...</div>
+            <div class="mt-2 text-xs text-gray-400">Preparing your workspace</div>
+        </div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <nav class="fixed top-0 left-0 right-0 glass-effect shadow-sm z-50" style="height: var(--header-height);">
+        <div class="flex items-center justify-between h-full px-4 md:px-6">
+            <!-- Left: Menu Toggle & Logo -->
+            <div class="flex items-center space-x-3">
+                <button id="sidebarToggle" class="p-2.5 rounded-xl hover:bg-gray-100/80 transition-all-300">
+                    <i class="fas fa-bars text-gray-700 text-lg"></i>
+                </button>
+                
+                <!-- Logo -->
+                <div class="flex items-center cursor-pointer group">
+                    <div class="relative">
+                        <img src="https://i.ibb.co/CxNVLMr/Gemini-Generated-Image-7j13hc7j13hc7j13-modified.png"
+                             alt="ThriveOS Logo"
+                             class="h-9 w-9 mr-2.5 rounded-lg transition-transform-300 group-hover:scale-105">
+                        <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                    </div>
+                    <div>
+                        <span class="text-lg font-bold gradient-text">ThriveOS</span>
+                        <div class="text-xs text-gray-500 -mt-1">POS System</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center: Quick Actions -->
+            <div class="hidden lg:flex items-center space-x-3">
+                <!-- Quick Sale Button -->
+                <button onclick="openQuickSale()" 
+                        class="btn-primary px-4 py-2.5 rounded-xl font-medium flex items-center space-x-2">
+                    <i class="fas fa-bolt text-sm"></i>
+                    <span>Quick Sale</span>
+                </button>
+                
+                <!-- Cash Drawer Status -->
+                <div class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100">
+                    <div class="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full pulse-slow"></div>
+                    <span class="text-sm font-medium text-gray-700">Drawer: <span class="text-green-600">Open</span></span>
+                </div>
+                
+                <!-- Search -->
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+                    <input type="text" 
+                           placeholder="Search anything..." 
+                           class="pl-10 pr-4 py-2 w-64 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all-300">
+                </div>
+            </div>
+            
+            <!-- Right: User & Notifications -->
+            <div class="flex items-center space-x-3">
+                <!-- Notifications -->
+                <button id="notificationsBtn" class="relative p-2.5 rounded-xl hover:bg-gray-100/80 transition-all-300 group">
+                    <i class="fas fa-bell text-gray-600 group-hover:text-red-600 transition-colors"></i>
+                    <div class="notification-badge"></div>
+                </button>
+                
+                <!-- Current Time -->
+                <div class="hidden md:block px-3 py-1.5 rounded-lg bg-gray-100/50">
+                    <div id="currentTime" class="text-sm font-medium text-gray-700"></div>
+                    <div id="currentDate" class="text-xs text-gray-500"></div>
+                </div>
+                
+                <!-- User Profile -->
+                <div class="relative">
+                    <button id="userMenuBtn" class="flex items-center space-x-2.5 p-1.5 rounded-xl hover:bg-gray-100/80 transition-all-300 group">
+                        <div class="relative">
+                            <div class="w-9 h-9 bg-gradient-to-br from-red-500 to-pink-500 text-white rounded-xl flex items-center justify-center font-bold shadow-sm">
+                                {{ (session.user_name[0] if session.user_name else 'U') | upper }}
+                            </div>
+                            <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                        </div>
+                        <div class="hidden lg:block text-left">
+                            <div class="text-sm font-semibold text-gray-900">
+                                {{ session.user_name if session.user_name else 'User' }}
+                            </div>
+                            <div class="text-xs text-gray-500">{{ session.user_role if session.user_role else 'Admin' }}</div>
+                        </div>
+                        <i class="fas fa-chevron-down text-gray-400 text-xs group-hover:text-gray-600 transition-colors"></i>
+                    </button>
+                    
+                    <!-- User Dropdown -->
+                    <div id="userDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
+                        <div class="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100/50">
+                            <div class="font-semibold text-gray-900">{{ session.user_name if session.user_name else 'User' }}</div>
+                            <div class="text-sm text-gray-500 truncate">{{ session.user_email if session.user_email else 'Admin' }}</div>
+                            <div class="mt-1 px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded-full inline-block">
+                                {{ session.user_role if session.user_role else 'Administrator' }}
+                            </div>
+                        </div>
+                        <div class="py-2">
+                            <a href="{{ url_for('dashboard') }}" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-colors">
+                                <i class="fas fa-tachometer-alt w-4 mr-3 text-gray-400"></i>
+                                Dashboard
+                            </a>
+                            <a href="#" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-colors">
+                                <i class="fas fa-cog w-4 mr-3 text-gray-400"></i>
+                                Settings
+                            </a>
+                            <a href="#" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-colors">
+                                <i class="fas fa-question-circle w-4 mr-3 text-gray-400"></i>
+                                Help & Support
+                            </a>
+                            <div class="border-t border-gray-100 my-2"></div>
+                            <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                                <i class="fas fa-sign-out-alt w-4 mr-3"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Layout -->
+    <div class="flex pt-16">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar-transition fixed left-0 top-16 bottom-0 bg-white shadow-lg z-40 overflow-y-auto" style="width: var(--sidebar-width);">
+            <!-- Business Info -->
+            <div class="p-4 border-b border-gray-100">
+                <div class="flex items-center space-x-3">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-red-100 to-pink-100 flex items-center justify-center shadow-sm">
+                        <i class="fas fa-store text-red-600"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold text-gray-900 truncate" id="businessName">
+                            {% if session.business_name %}
+                                {{ session.business_name }}
+                            {% else %}
+                                My Business
+                            {% endif %}
+                        </div>
+                        <div class="text-xs text-gray-500 truncate">
+                            {{ session.user_email if session.user_email else 'POS Terminal' }}
+                        </div>
+                    </div>
+                    <button class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-ellipsis-v text-gray-400 text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Menu -->
+            <nav class="p-4 space-y-1" id="sidebarMenu">
+                <!-- Dashboard -->
+                <a href="{{ url_for('dashboard') }}" 
+                   class="group flex items-center px-3 py-3 rounded-xl transition-all-300 hover:bg-gray-50 text-gray-700 {% if request.endpoint == 'dashboard' %}active-menu{% endif %}">
+                    <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center mr-3 group-hover:bg-red-100 transition-colors">
+                        <i class="fas fa-tachometer-alt text-gray-600 group-hover:text-red-600"></i>
+                    </div>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+
+                <!-- Sales & Operations -->
+                <div class="menu-section">
+                    <button class="menu-header group w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-gray-50 transition-all-300 text-gray-700"
+                            onclick="toggleMenu('salesMenu')">
+                        <div class="flex items-center">
+                            <div class="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-cash-register text-blue-600"></i>
+                            </div>
+                            <span class="font-medium">Sales / Cashier</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="salesArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="salesMenu">
+                        <a href="{{url_for('sales_terminal.terminal')}}" 
+                           class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>New Sale</span>
+                        </a>
+                        <a href="{{url_for('sales_terminal.sales_history')}}" 
+                        class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>History</span>
+                        </a>
+
+                           <a href="{{url_for('expenses.expenses_list')}}" 
+                        class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>Expenses</span>
+                        </a>
+
+                        <a href="{{url_for('sales_terminal.audit_logs')}}" 
+                        class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>Audit Logs</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Customers & Loyalty -->
+                <div class="menu-section">
+                    <button class="menu-header group w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-gray-50 transition-all-300 text-gray-700"
+                            onclick="toggleMenu('customersMenu')">
+                        <div class="flex items-center">
+                            <div class="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-users text-purple-600"></i>
+                            </div>
+                            <span class="font-medium">Customers & Loyalty</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="customersArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="customersMenu">
+                        <a href="{{url_for('customers.customers_list')}}" class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>Customers</span>
+                        </a>
+                       
+                    </div>
+                </div>
+
+                
+
+                <!-- Products & Inventory -->
+                <div class="menu-section">
+                    <button class="menu-header group w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-gray-50 transition-all-300 text-gray-700"
+                            onclick="toggleMenu('productsMenu')">
+                        <div class="flex items-center">
+                            <div class="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-boxes text-emerald-600"></i>
+                            </div>
+                            <span class="font-medium">Products & Inventory</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="productsArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="productsMenu">
+                        <a href="{{url_for('products_inventory.products_dashboard')}}" 
+                           class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>Products</span>
+                        </a>
+                        <a href="{{url_for('products_inventory.categories')}}" 
+                           class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>Categories</span>
+                        </a>
+                        <a href="{{ url_for('products_inventory.low_stock_report') }}" 
+                           class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>Stock Levels</span>
+                        </a>
+                        <a href="{{url_for('products_inventory.product_audit_logs')}}" 
+                           class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>Audit Stock</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Security Header -->
+                <div class="mt-6 px-3 py-2">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-shield-alt mr-2 text-gray-400"></i>
+                        Security & Anti-Theft
+                    </div>
+                </div>
+
+                <!-- Users & Roles (Admin Only) -->
+                {% if session.get('is_admin') or session.get('user_role') == 'admin' %}
+                <div class="menu-section">
+                    <button class="menu-header group w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-gray-50 transition-all-300 text-gray-700"
+                            onclick="toggleMenu('usersMenu')">
+                        <div class="flex items-center">
+                            <div class="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-user-shield text-orange-600"></i>
+                            </div>
+                            <span class="font-medium">Users & Roles</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="usersArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="usersMenu">
+                        <a href="{{ url_for('user_roles.employees') }}" 
+                           class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>Employees</span>
+                        </a>
+                        <a href="{{ url_for('user_roles.roles') }}" 
+                           class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>Roles & Permissions</span>
+                        </a>
+                        <a href="{{ url_for('user_roles.audit_logs') }}" 
+                           class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>Audit Logs</span>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+        ]
+
+                <!-- Financial Header -->
+                <div class="mt-6 px-3 py-2">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-chart-line mr-2 text-gray-400"></i>
+                        Financial & Reporting
+                    </div>
+                </div>
+
+                <!-- Reports -->
+                <div class="menu-section">
+                    <button class="menu-header group w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-gray-50 transition-all-300 text-gray-700"
+                            onclick="toggleMenu('reportsMenu')">
+                        <div class="flex items-center">
+                            <div class="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-chart-bar text-indigo-600"></i>
+                            </div>
+                            <span class="font-medium">Reports</span>
+                        </div>
+                        <i class="fas fa-chevron-down menu-arrow text-gray-400 text-xs" id="reportsArrow"></i>
+                    </button>
+                    <div class="menu-dropdown" id="reportsMenu">
+                        <a href="{{url_for('reports.reports_dashboard')}}" class="submenu-item flex items-center px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 transition-colors">
+                            <div class="w-2 h-2 rounded-full bg-gray-300 mr-3"></div>
+                            <span>Reports</span>
+                        </a>
+                       
+                    </div>
+                </div>
+
+                <!-- Settings Link -->
+                <a href="{{ url_for('settings.settings_index') }}"
+                class="flex items-center px-3 py-3 rounded-xl hover:bg-gray-50 transition-all-300 {% if request.endpoint.startswith('settings.') %}bg-gray-50 text-red-600{% else %}text-gray-700{% endif %}">
+                    <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center mr-3">
+                        <i class="fas fa-cog {% if request.endpoint.startswith('settings.') %}text-red-600{% else %}text-gray-500{% endif %}"></i>
+                    </div>
+                    <span class="font-medium">Settings</span>
+                </a>
+
+                <!-- System Status Footer -->
+                <div class="mt-8 p-4 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50 border border-gray-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-medium text-gray-700">System Status</span>
+                        <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200">
+                            <i class="fas fa-check-circle mr-1"></i> Online
+                        </span>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-500">Uptime:</span>
+                            <span class="font-mono font-medium text-gray-700">99.9%</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-500">Response:</span>
+                            <span class="font-mono font-medium text-green-600">< 50ms</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-500">Version:</span>
+                            <span class="font-mono font-medium text-gray-700">v2.1.4</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-gray-200">
+                        <div class="text-xs text-gray-500 flex items-center justify-between">
+                            <span>Last sync: 2 min ago</span>
+                            <button class="text-red-600 hover:text-red-700">
+                                <i class="fas fa-sync-alt text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                 
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="mainContent" class="sidebar-transition flex-1 ml-0 p-4 md:p-6 min-h-screen page-transition">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Flash Messages System
+        class FlashMessages {
+            static show(message, type = 'info') {
+                const container = document.getElementById('flash-messages');
+                const types = {
+                    'success': { bg: 'bg-green-500', icon: 'fa-check-circle' },
+                    'error': { bg: 'bg-red-500', icon: 'fa-exclamation-circle' },
+                    'warning': { bg: 'bg-yellow-500', icon: 'fa-exclamation-triangle' },
+                    'info': { bg: 'bg-blue-500', icon: 'fa-info-circle' }
+                };
+
+                const config = types[type] || types.info;
+                
+                const messageEl = document.createElement('div');
+                messageEl.className = `flash-message ${config.bg} text-white rounded-xl shadow-lg p-4 flex items-center justify-between`;
+                messageEl.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas ${config.icon} mr-3"></i>
+                        <span>${message}</span>
+                    </div>
+                    <button onclick="this.parentElement.remove()" class="ml-4 text-white/80 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+
+                container.appendChild(messageEl);
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (messageEl.parentElement) {
+                        messageEl.style.opacity = '0';
+                        messageEl.style.transform = 'translateY(-10px)';
+                        setTimeout(() => messageEl.remove(), 300);
+                    }
+                }, 5000);
+            }
+
+            static init() {
+                // Check for Flask flash messages
+                const flashMessages = {{ get_flashed_messages(with_categories=true) | tojson | safe }};
+                flashMessages.forEach(([category, message]) => {
+                    this.show(message, category);
+                });
+            }
+        }
+
+        // Modern Spinner Manager
+        class SpinnerManager {
+            static show() {
+                const loader = document.getElementById('page-loader');
+                loader.classList.remove('opacity-0', 'pointer-events-none');
+                loader.classList.add('opacity-100');
+            }
+
+            static hide() {
+                const loader = document.getElementById('page-loader');
+                loader.classList.add('opacity-0', 'pointer-events-none');
+                loader.classList.remove('opacity-100');
+            }
+
+            static showWithMessage(message) {
+                this.show();
+                const messageEl = document.querySelector('#page-loader .text-sm');
+                if (messageEl) {
+                    messageEl.textContent = message;
+                }
+            }
+        }
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize flash messages
+            FlashMessages.init();
+            
+            // Hide loader
+            SpinnerManager.hide();
+
+            // Update time
+            function updateTime() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true
+                });
+                const dateString = now.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric'
+                });
+                
+                document.getElementById('currentTime').textContent = timeString;
+                document.getElementById('currentDate').textContent = dateString;
+            }
+            
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // Sidebar Toggle with smooth animation
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            let sidebarOpen = true;
+
+            sidebarToggle.addEventListener('click', function() {
+                sidebarOpen = !sidebarOpen;
+                if (sidebarOpen) {
+                    sidebar.style.width = 'var(--sidebar-width)';
+                    mainContent.style.marginLeft = 'var(--sidebar-width)';
+                    sidebarToggle.innerHTML = '<i class="fas fa-bars text-gray-700 text-lg"></i>';
+                } else {
+                    sidebar.style.width = 'var(--sidebar-collapsed)';
+                    mainContent.style.marginLeft = 'var(--sidebar-collapsed)';
+                    sidebarToggle.innerHTML = '<i class="fas fa-bars text-gray-700 text-lg"></i>';
+                }
+            });
+
+            // User dropdown
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userDropdown = document.getElementById('userDropdown');
+            
+            userMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userDropdown.classList.toggle('hidden');
+            });
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!userDropdown.contains(e.target) && !userMenuBtn.contains(e.target)) {
+                    userDropdown.classList.add('hidden');
+                }
+                
+                // Close all menu dropdowns on mobile when clicking outside
+                if (window.innerWidth < 768) {
+                    document.querySelectorAll('.menu-dropdown.open').forEach(menu => {
+                        const arrowId = menu.id.replace('Menu', 'Arrow');
+                        const arrow = document.getElementById(arrowId);
+                        menu.classList.remove('open');
+                        if (arrow) arrow.classList.remove('open');
+                    });
+                }
+            });
+
+            // Menu toggle function
+            window.toggleMenu = function(menuId) {
+                const menu = document.getElementById(menuId);
+                const arrow = document.getElementById(menuId.replace('Menu', 'Arrow'));
+                
+                // Close other menus on mobile
+                if (window.innerWidth < 768) {
+                    document.querySelectorAll('.menu-dropdown.open').forEach(otherMenu => {
+                        if (otherMenu.id !== menuId) {
+                            otherMenu.classList.remove('open');
+                            const otherArrow = document.getElementById(otherMenu.id.replace('Menu', 'Arrow'));
+                            if (otherArrow) otherArrow.classList.remove('open');
+                        }
+                    });
+                }
+                
+                menu.classList.toggle('open');
+                arrow.classList.toggle('open');
+                
+                // Save state
+                localStorage.setItem(menuId, menu.classList.contains('open'));
+            };
+
+            // Initialize menu states
+            function initializeMenuStates() {
+                const menuIds = [
+                    'salesMenu', 'customersMenu', 'productsMenu',
+                    'usersMenu', 'auditMenu', 'reportsMenu'
+                ];
+                
+                menuIds.forEach(menuId => {
+                    const savedState = localStorage.getItem(menuId);
+                    const menu = document.getElementById(menuId);
+                    const arrow = document.getElementById(menuId.replace('Menu', 'Arrow'));
+                    
+                    if (savedState === 'true' && menu && arrow) {
+                        menu.classList.add('open');
+                        arrow.classList.add('open');
+                    }
+                });
+            }
+            initializeMenuStates();
+
+            // Highlight active menu
+            function highlightActiveMenu() {
+                const currentPath = window.location.pathname;
+                const menuLinks = document.querySelectorAll('#sidebarMenu a[href]');
+                
+                menuLinks.forEach(link => {
+                    link.classList.remove('active-menu');
+                    if (link.getAttribute('href') === currentPath) {
+                        link.classList.add('active-menu');
+                        
+                        // Open parent menu
+                        const parentMenu = link.closest('.menu-dropdown');
+                        if (parentMenu) {
+                            parentMenu.classList.add('open');
+                            const arrowId = parentMenu.id.replace('Menu', 'Arrow');
+                            const arrow = document.getElementById(arrowId);
+                            if (arrow) arrow.classList.add('open');
+                        }
+                    }
+                });
+            }
+            setTimeout(highlightActiveMenu, 100);
+
+            // Responsive sidebar
+            function handleResize() {
+                if (window.innerWidth < 768) {
+                    sidebar.style.width = '0';
+                    mainContent.style.marginLeft = '0';
+                    sidebarOpen = false;
+                } else {
+                    sidebar.style.width = 'var(--sidebar-width)';
+                    mainContent.style.marginLeft = 'var(--sidebar-width)';
+                    sidebarOpen = true;
+                }
+            }
+            window.addEventListener('resize', handleResize);
+            handleResize();
+
+            // Ripple effect for buttons
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-primary')) {
+                    const btn = e.target.closest('.btn-primary');
+                    const ripple = document.createElement('span');
+                    const rect = btn.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.width = ripple.style.height = size + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    ripple.className = 'ripple';
+                    
+                    btn.appendChild(ripple);
+                    setTimeout(() => ripple.remove(), 600);
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + K for search
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    document.querySelector('input[placeholder*="Search"]')?.focus();
+                }
+                
+                // Ctrl/Cmd + N for new sale
+                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                    e.preventDefault();
+                    openQuickSale();
+                }
+                
+                // Esc to close modals/dropdowns
+                if (e.key === 'Escape') {
+                    userDropdown.classList.add('hidden');
+                    document.querySelectorAll('.menu-dropdown.open').forEach(menu => {
+                        const arrowId = menu.id.replace('Menu', 'Arrow');
+                        const arrow = document.getElementById(arrowId);
+                        menu.classList.remove('open');
+                        if (arrow) arrow.classList.remove('open');
+                    });
+                }
+            });
+
+            // Show loading spinner on navigation
+            document.addEventListener('click', function(e) {
+                const link = e.target.closest('a');
+                if (link && link.href && !link.target && !link.href.startsWith('#') && !link.href.startsWith('javascript:')) {
+                    SpinnerManager.show();
+                }
+            });
+
+            // Quick sale modal functions
+            window.openQuickSale = function() {
+                // Implement quick sale modal
+                FlashMessages.show('Quick sale opened', 'info');
+            };
+
+            // System health check
+            setInterval(async () => {
+                try {
+                    const response = await fetch('/api/health');
+                    if (!response.ok) throw new Error('Health check failed');
+                } catch (error) {
+                    console.warn('System health check failed');
+                }
+            }, 30000);
+
+            // Performance logging
+            if (window.performance) {
+                const perf = performance.getEntriesByType('navigation')[0];
+                if (perf) {
+                    console.log(`🚀 ThriveOS loaded in ${Math.round(perf.domContentLoadedEventEnd)}ms`);
+                }
+            }
+        });
+
+        // Expose to global scope
+        window.FlashMessages = FlashMessages;
+        window.SpinnerManager = SpinnerManager;
+
+        // Global error handling
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+            FlashMessages.show('An unexpected error occurred', 'error');
+        });
+
+        // Handle page visibility
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                document.title = '⏸️ ' + document.title;
+            } else {
+                document.title = document.title.replace('⏸️ ', '');
+                // Refresh data when coming back to tab
+                if (typeof window.refreshData === 'function') {
+                    window.refreshData();
+                }
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

@@ -1,0 +1,171 @@
+{% extends "posbase.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Page Header -->
+        <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div class="mb-4 sm:mb-0">
+                <div class="flex items-center">
+                    <a href="{{ url_for('settings.settings_index') }}"
+                       class="mr-4 text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">{{ title }}</h1>
+                        <p class="mt-1 text-sm text-gray-600">Configure your payment gateway credentials</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PesaPal Settings Form -->
+        <div class="bg-white shadow rounded-lg mb-8">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">PesaPal Configuration</h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                    Enter your PesaPal API credentials. These are required for processing online payments.
+                </p>
+            </div>
+            
+            <form method="POST" action="{{ url_for('settings.update_payment_gateways') }}" class="p-6">
+                <div class="space-y-6">
+                    <!-- Consumer Key -->
+                    <div>
+                        <label for="pesapal_consumer_key" class="block text-sm font-medium text-gray-700">
+                            PesaPal Consumer Key *
+                        </label>
+                        <div class="mt-1">
+                            <input type="password" 
+                                   id="pesapal_consumer_key" 
+                                   name="pesapal_consumer_key"
+                                   value="{{ current_settings.pesapal_consumer_key if current_settings else '' }}"
+                                   required
+                                   class="shadow-sm focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">
+                            Your PesaPal consumer key obtained from the PesaPal dashboard
+                        </p>
+                    </div>
+
+                    <!-- Consumer Secret -->
+                    <div>
+                        <label for="pesapal_consumer_secret" class="block text-sm font-medium text-gray-700">
+                            PesaPal Consumer Secret *
+                        </label>
+                        <div class="mt-1">
+                            <input type="password" 
+                                   id="pesapal_consumer_secret" 
+                                   name="pesapal_consumer_secret"
+                                   value="{{ current_settings.pesapal_consumer_secret if current_settings else '' }}"
+                                   required
+                                   class="shadow-sm focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">
+                            Your PesaPal consumer secret obtained from the PesaPal dashboard
+                        </p>
+                    </div>
+
+                    <!-- IPN URL -->
+                    <div>
+                        <label for="pesapal_ipn_url" class="block text-sm font-medium text-gray-700">
+                            PesaPal IPN URL (Optional)
+                        </label>
+                        <div class="mt-1">
+                            <input type="url" 
+                                   id="pesapal_ipn_url" 
+                                   name="pesapal_ipn_url"
+                                   value="{{ current_settings.pesapal_ipn_url if current_settings else '' }}"
+                                   placeholder="https://yourdomain.com/payments/callback"
+                                   class="shadow-sm focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">
+                            Instant Payment Notification URL where PesaPal sends payment status updates
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="mt-8 pt-6 border-t border-gray-200 flex justify-end space-x-3">
+                    <a href="{{ url_for('settings.settings_index') }}"
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        <i class="fas fa-save mr-2"></i>
+                        Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Information Card -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle text-blue-400"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800">How to get your PesaPal credentials</h3>
+                    <div class="mt-2 text-sm text-blue-700">
+                        <ol class="list-decimal pl-5 space-y-1">
+                            <li>Go to the <a href="https://developer.pesapal.com" target="_blank" class="font-medium underline">PesaPal Developer Portal</a></li>
+                            <li>Register or login to your PesaPal account</li>
+                            <li>Navigate to the API Credentials section</li>
+                            <li>Generate or copy your Consumer Key and Consumer Secret</li>
+                            <li>Make sure your account is in sandbox mode for testing</li>
+                            <li>Contact PesaPal support to move to production when ready</li>
+                        </ol>
+                    </div>
+                    <div class="mt-3 text-xs text-blue-600">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        Keep your credentials secure and never share them publicly
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Card -->
+        {% if current_settings %}
+        <div class="bg-green-50 border border-green-200 rounded-lg p-6 mt-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-check-circle text-green-400"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-green-800">Settings are configured</h3>
+                    <div class="mt-2 text-sm text-green-700">
+                        <p>Your PesaPal settings were last updated on 
+                            <span class="font-medium">
+                                {{ current_settings.updated_at[:10] if current_settings.updated_at else 'Unknown date' }}
+                            </span>
+                        </p>
+                        <p class="mt-1">You can process online payments through your POS system.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Toggle password visibility
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add show/hide password buttons
+        const consumerKeyField = document.getElementById('pesapal_consumer_key');
+        const consumerSecretField = document.getElementById('pesapal_consumer_secret');
+        
+        function togglePasswordVisibility(field) {
+            const type = field.getAttribute('type') === 'password' ? 'text' : 'password';
+            field.setAttribute('type', type);
+        }
+        
+        // Add toggle buttons (optional enhancement)
+        // You can add eye icons next to password fields if needed
+    });
+</script>
+{% endblock %}

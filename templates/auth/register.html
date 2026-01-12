@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Register - ThriveOS{% endblock %}
+
+{% block extra_js %}
+<script>
+    function previewLogo(event) {
+        const input = event.target;
+        const preview = document.getElementById('logo-preview');
+        const previewContainer = document.getElementById('logo-preview-container');
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+            }
+            
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    
+    function validatePassword() {
+        const password = document.getElementById('password').value;
+        const confirm = document.getElementById('confirm_password').value;
+        const message = document.getElementById('password-match-message');
+        
+        if (password && confirm) {
+            if (password === confirm) {
+                message.innerHTML = '<span class="text-green-600"><i class="fas fa-check-circle"></i> Passwords match</span>';
+            } else {
+                message.innerHTML = '<span class="text-red-600"><i class="fas fa-times-circle"></i> Passwords do not match</span>';
+            }
+        } else {
+            message.innerHTML = '';
+        }
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h2 class="text-3xl font-extrabold text-gray-900">
+                Create Your ThriveOS Account
+            </h2>
+            <p class="mt-2 text-lg text-gray-600">
+                Get started with the fastest POS system for your business
+            </p>
+        </div>
+        
+        <!-- Registration Form -->
+        <form class="space-y-6" action="{{ url_for('auth.register') }}" method="POST" enctype="multipart/form-data" id="registerForm">
+            <div class="bg-white shadow-lg rounded-lg p-6 sm:p-8">
+                <!-- Personal Information -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4 border-b pb-2">
+                        <i class="fas fa-user text-red-600 mr-2"></i>Personal Information
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- First Name -->
+                        <div>
+                            <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">
+                                First Name *
+                            </label>
+                            <input id="first_name" name="first_name" type="text" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 form-input"
+                                   placeholder="John">
+                        </div>
+                        
+                        <!-- Last Name -->
+                        <div>
+                            <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">
+                                Last Name *
+                            </label>
+                            <input id="last_name" name="last_name" type="text" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 form-input"
+                                   placeholder="Doe">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Business Information -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4 border-b pb-2">
+                        <i class="fas fa-building text-red-600 mr-2"></i>Business Information
+                    </h3>
+                    
+                    <!-- Business Name -->
+                    <div class="mb-6">
+                        <label for="business_name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Business Name *
+                        </label>
+                        <input id="business_name" name="business_name" type="text" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 form-input"
+                               placeholder="Your Business Name">
+                    </div>
+                    
+                    <!-- Business Logo -->
+                    <div>
+                        <label for="business_logo" class="block text-sm font-medium text-gray-700 mb-1">
+                            Business Logo (Optional)
+                        </label>
+                        <div class="mt-1 flex items-center space-x-4">
+                            <div class="flex-1">
+                                <input id="business_logo" name="business_logo" type="file" accept="image/*"
+                                       class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+                                       onchange="previewLogo(event)">
+                                <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 5MB</p>
+                            </div>
+                            
+                            <!-- Logo Preview -->
+                            <div id="logo-preview-container" class="hidden">
+                                <div class="relative">
+                                    <img id="logo-preview" class="h-16 w-16 rounded-lg object-cover border">
+                                    <button type="button" onclick="document.getElementById('logo-preview-container').classList.add('hidden'); document.getElementById('business_logo').value='';"
+                                            class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                                        ×
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Account Information -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4 border-b pb-2">
+                        <i class="fas fa-lock text-red-600 mr-2"></i>Account Information
+                    </h3>
+                    
+                    <!-- Email -->
+                    <div class="mb-6">
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                            Email Address *
+                        </label>
+                        <input id="email" name="email" type="email" autocomplete="email" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 form-input"
+                               placeholder="you@business.com">
+                    </div>
+                    
+                    <!-- Password -->
+                    <div class="mb-4">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+                            Password *
+                        </label>
+                        <input id="password" name="password" type="password" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 form-input"
+                               placeholder="••••••••"
+                               onkeyup="validatePassword()">
+                        <p class="text-xs text-gray-500 mt-1">Minimum 8 characters with letters and numbers</p>
+                    </div>
+                    
+                    <!-- Confirm Password -->
+                    <div>
+                        <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-1">
+                            Confirm Password *
+                        </label>
+                        <input id="confirm_password" name="confirm_password" type="password" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 form-input"
+                               placeholder="••••••••"
+                               onkeyup="validatePassword()">
+                        <p id="password-match-message" class="text-sm mt-1"></p>
+                    </div>
+                </div>
+                
+                <!-- Terms & Submit -->
+                <div class="space-y-4">
+                    <div class="flex items-center">
+                        <input id="terms" name="terms" type="checkbox" required
+                               class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+                        <label for="terms" class="ml-2 block text-sm text-gray-900">
+                            I agree to the 
+                            <a href="#" class="text-red-600 hover:text-red-500">Terms of Service</a>
+                            and 
+                            <a href="#" class="text-red-600 hover:text-red-500">Privacy Policy</a>
+                        </label>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit"
+                            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 btn-primary">
+                        <i class="fas fa-rocket mr-2"></i>
+                        Create Account & Launch ThriveOS
+                    </button>
+                    
+                    <!-- Login Link -->
+                    <p class="text-center text-sm text-gray-600 mt-4">
+                        Already have an account?
+                        <a href="{{ url_for('auth.login') }}" class="font-medium text-red-600 hover:text-red-500">
+                            Sign in here
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Performance Indicator -->
+        <div class="mt-6 bg-linear-to-r from-red-50 to-white rounded-lg p-4 border border-red-100">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="loader mr-3"></div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">High-speed processing enabled</p>
+                        <p class="text-xs text-gray-500">Your registration completes in milliseconds</p>
+                    </div>
+                </div>
+                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                    <i class="fas fa-bolt"></i> Fast
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
